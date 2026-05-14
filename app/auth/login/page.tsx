@@ -10,11 +10,42 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate login
-    router.push("/dashboard");
+    setError("");
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        if (data.token) {
+          localStorage.setItem("token", data.token);
+        }
+        if (data.user) {
+          localStorage.setItem("user", JSON.stringify(data.user));
+        }
+        router.push("/dashboard");
+      } else {
+        setError(data.message || "Échec de la connexion. Veuillez vérifier vos identifiants.");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      setError("Erreur de connexion à l'API locale.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -35,6 +66,12 @@ export default function LoginPage() {
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-10 px-8 shadow-2xl shadow-gray-200/50 rounded-[2.5rem] border border-gray-100">
           <form className="space-y-6" onSubmit={handleSubmit}>
+            {error && (
+              <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
+                {error}
+              </div>
+            )}
+
             <div>
               <label htmlFor="email" className="block text-sm font-bold text-gray-700 mb-2">
                 Email
@@ -91,8 +128,9 @@ export default function LoginPage() {
               <button
                 type="submit"
                 className="w-full btn-primary"
+                disabled={isLoading}
               >
-                Se connecter
+                {isLoading ? "Connexion..." : "Se connecter"}
               </button>
             </div>
           </form>
@@ -123,7 +161,7 @@ export default function LoginPage() {
         <p className="mt-8 text-center text-sm text-gray-500">
           Pas encore de compte ?{" "}
           <Link href="/auth/register" className="font-bold text-green-600 hover:text-green-700">
-            S'inscrire
+            S&apos;inscrire
           </Link>
         </p>
       </div>

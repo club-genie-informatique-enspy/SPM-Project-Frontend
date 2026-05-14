@@ -2,12 +2,14 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Layers, Eye, EyeOff, Github, Chrome, Check } from "@/lib/icons";
+import { Layers, Eye, EyeOff, Github, Chrome } from "@/lib/icons";
 import { useRouter } from "next/navigation";
 
 export default function RegisterPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -16,14 +18,43 @@ export default function RegisterPage() {
     terms: false,
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
+
     if (formData.password !== formData.confirmPassword) {
-      alert("Les mots de passe ne correspondent pas");
+      setError("Les mots de passe ne correspondent pas.");
       return;
     }
-    // Simulate register
-    router.push("/dashboard");
+
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        router.push("/auth/login");
+      } else {
+        setError(data.message || "Échec de l'inscription. L'utilisateur existe peut-être déjà.");
+      }
+    } catch (error) {
+      console.error("Register error:", error);
+      setError("Erreur de connexion à l'API locale.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -37,13 +68,19 @@ export default function RegisterPage() {
         </Link>
         <h2 className="text-3xl font-black text-gray-900 tracking-tight">Créer un compte</h2>
         <p className="mt-2 text-sm text-gray-500">
-          Rejoignez des milliers d'équipes agiles
+          Rejoignez des milliers d&apos;équipes agiles
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-10 px-8 shadow-2xl shadow-gray-200/50 rounded-[2.5rem] border border-gray-100">
           <form className="space-y-5" onSubmit={handleSubmit}>
+            {error && (
+              <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
+                {error}
+              </div>
+            )}
+
             <div>
               <label htmlFor="name" className="block text-sm font-bold text-gray-700 mb-2">
                 Nom complet
@@ -132,9 +169,9 @@ export default function RegisterPage() {
               </div>
               <div className="ml-3 text-sm">
                 <label htmlFor="terms" className="text-gray-500">
-                  J'accepte les{" "}
+                  J&apos;accepte les{" "}
                   <Link href="/terms" className="font-bold text-green-600 hover:text-green-700">
-                    conditions d'utilisation
+                    conditions d&apos;utilisation
                   </Link>
                 </label>
               </div>
@@ -144,8 +181,9 @@ export default function RegisterPage() {
               <button
                 type="submit"
                 className="w-full btn-primary"
+                disabled={isLoading}
               >
-                Créer mon compte
+                {isLoading ? "Création..." : "Créer mon compte"}
               </button>
             </div>
           </form>
@@ -156,7 +194,7 @@ export default function RegisterPage() {
                 <div className="w-full border-t border-gray-100" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-white text-gray-400 font-medium">ou s'inscrire avec</span>
+                <span className="px-4 bg-white text-gray-400 font-medium">ou s&apos;inscrire avec</span>
               </div>
             </div>
 
