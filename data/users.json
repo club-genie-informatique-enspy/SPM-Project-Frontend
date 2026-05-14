@@ -1,0 +1,20 @@
+[
+  {
+    "id": "user-1",
+    "name": "Azangue Delmat",
+    "email": "azangue.delmat@example.com",
+    "password": "password123",
+    "role": "admin",
+    "isActive": true,
+    "createdAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "user-2",
+    "name": "Negou Donald",
+    "email": "negou.donald@example.com",
+    "password": "password123",
+    "role": "user",
+    "isActive": true,
+    "createdAt": "2024-01-02T00:00:00.000Z"
+  }
+]
