@@ -17,6 +17,7 @@ import {
   Zap,
 } from "@/lib/icons";
 import Avatar from "@/components/ui/Avatar";
+import NewsletterForm from "@/components/ui/NewsletterForm";
 
 export const metadata = {
   title: "SPM - Accueil",
@@ -329,22 +330,7 @@ export default function LandingPage() {
                 <h3 className="text-sm font-black text-white mb-1">Restez informé</h3>
                 <p className="text-xs text-gray-500">Recevez les nouveautés SPM directement dans votre boîte.</p>
               </div>
-              <form className="flex items-center gap-2 w-full lg:w-auto" onSubmit={(e) => e.preventDefault()}>
-                <div className="relative flex-1 lg:w-72">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                  <input
-                    type="email"
-                    placeholder="votre@email.com"
-                    className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-gray-300 placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 bg-green-600 hover:bg-green-500 text-white text-sm font-bold rounded-xl transition-all active:scale-95 whitespace-nowrap"
-                >
-                  S&apos;abonner
-                </button>
-              </form>
+              <NewsletterForm />
             </div>
           </div>
         </div>

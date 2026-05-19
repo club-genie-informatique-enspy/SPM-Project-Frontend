@@ -12,6 +12,7 @@ import {
 } from "@/lib/icons";
 import { projects, tasks as allTasks } from "@/lib/mock-data";
 import TaskCard from "@/components/ui/TaskCard";
+import TaskDetailModal from "@/components/ui/TaskDetailModal";
 import Link from "next/link";
 import { TaskStatus, Task } from "@/types";
 
@@ -27,6 +28,7 @@ export default function KanbanPage({ params }: { params: Promise<{ id: string }>
   const { id } = use(params);
   const project = projects.find(p => p.id === id) || projects[0];
   const [tasks, setTasks] = useState<Task[]>(allTasks.filter(t => t.projectId === project.id));
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   const columns: { title: string; status: TaskStatus }[] = [
     { title: "À faire",  status: "todo" },
@@ -137,6 +139,7 @@ export default function KanbanPage({ params }: { params: Promise<{ id: string }>
                       key={task.id}
                       task={task}
                       onDragStart={onDragStart}
+                      onClick={setSelectedTask}
                     />
                   ))}
 
@@ -153,6 +156,10 @@ export default function KanbanPage({ params }: { params: Promise<{ id: string }>
           })}
         </div>
       </main>
+
+      {selectedTask && (
+        <TaskDetailModal task={selectedTask} onClose={() => setSelectedTask(null)} />
+      )}
     </div>
   );
 }

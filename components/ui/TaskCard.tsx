@@ -5,12 +5,12 @@ import { MessageSquare, Clock } from "@/lib/icons";
 import { Task } from "@/types";
 import Badge from "./Badge";
 import Avatar from "./Avatar";
-import { useRouter } from "next/navigation";
 import { users, projects } from "@/lib/mock-data";
 
 interface TaskCardProps {
   task: Task;
   onDragStart?: (e: React.DragEvent, taskId: string) => void;
+  onClick?: (task: Task) => void;
 }
 
 const priorityBorder: Record<string, string> = {
@@ -20,17 +20,14 @@ const priorityBorder: Record<string, string> = {
   low:      "border-l-gray-300",
 };
 
-const TaskCard: React.FC<TaskCardProps> = ({ task, onDragStart }) => {
-  const router = useRouter();
+const TaskCard: React.FC<TaskCardProps> = ({ task, onDragStart, onClick }) => {
   const assignee = users.find((u) => u.id === task.assigneeId);
   const project = projects.find((p) => p.id === task.projectId);
   const taskNumber = task.id.split("-").pop();
   const taskId = project ? `${project.key}-${taskNumber}` : taskNumber;
   const isOverdue = task.dueDate && new Date(task.dueDate) < new Date();
 
-  const handleClick = () => {
-    router.push(`/dashboard/projects/${task.projectId}/tasks/${task.id}`);
-  };
+  const handleClick = () => onClick?.(task);
 
   return (
     <div
