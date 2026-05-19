@@ -2,7 +2,8 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Layers, Eye, EyeOff, Github, Chrome } from "@/lib/icons";
+import { Layers, Eye, EyeOff, Github } from "@/lib/icons";
+import { Google } from "@/lib/icons";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
@@ -21,27 +22,21 @@ export default function LoginPage() {
     try {
       const response = await fetch("/api/auth/login", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        if (data.token) {
-          localStorage.setItem("token", data.token);
-        }
-        if (data.user) {
-          localStorage.setItem("user", JSON.stringify(data.user));
-        }
+        if (data.token)  localStorage.setItem("token", data.token);
+        if (data.user)   localStorage.setItem("user", JSON.stringify(data.user));
         router.push("/dashboard");
       } else {
         setError(data.message || "Échec de la connexion. Veuillez vérifier vos identifiants.");
       }
-    } catch (error) {
-      console.error("Login error:", error);
+    } catch (err) {
+      console.error("Login error:", err);
       setError("Erreur de connexion à l'API locale.");
     } finally {
       setIsLoading(false);
@@ -49,22 +44,22 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f9fafb] flex flex-col justify-center py-12 px-6 lg:px-8">
+    <div className="min-h-screen bg-[#f9fafb] dark:bg-gray-900 flex flex-col justify-center py-12 px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
         <Link href="/" className="inline-flex items-center gap-2 mb-8">
           <div className="bg-green-600 p-1.5 rounded-xl">
             <Layers className="w-8 h-8 text-white" />
           </div>
-          <span className="text-3xl font-black text-gray-900 tracking-tighter">SPM</span>
+          <span className="text-3xl font-black text-gray-900 dark:text-gray-100 tracking-tighter">SPM</span>
         </Link>
-        <h2 className="text-3xl font-black text-gray-900 tracking-tight">Bon retour 👋</h2>
-        <p className="mt-2 text-sm text-gray-500">
+        <h2 className="text-3xl font-black text-gray-900 dark:text-gray-100 tracking-tight">Bon retour 👋</h2>
+        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
           Connectez-vous pour gérer vos projets
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-10 px-8 shadow-2xl shadow-gray-200/50 rounded-[2.5rem] border border-gray-100">
+        <div className="bg-white dark:bg-gray-800 py-10 px-8 shadow-2xl shadow-gray-200/50 dark:shadow-none rounded-[2.5rem] border border-gray-100 dark:border-gray-700">
           <form className="space-y-6" onSubmit={handleSubmit}>
             {error && (
               <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
@@ -73,7 +68,7 @@ export default function LoginPage() {
             )}
 
             <div>
-              <label htmlFor="email" className="block text-sm font-bold text-gray-700 mb-2">
+              <label htmlFor="email" className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                 Email
               </label>
               <input
@@ -84,14 +79,14 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="block w-full px-4 py-3 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                className="block w-full px-4 py-3 rounded-2xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all placeholder:text-gray-400"
                 placeholder="nom@exemple.com"
               />
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label htmlFor="password" className="block text-sm font-bold text-gray-700">
+                <label htmlFor="password" className="block text-sm font-bold text-gray-700 dark:text-gray-300">
                   Mot de passe
                 </label>
                 <Link
@@ -110,13 +105,14 @@ export default function LoginPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full px-4 py-3 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                  className="block w-full px-4 py-3 pr-12 rounded-2xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all placeholder:text-gray-400"
                   placeholder="••••••••"
                   minLength={8}
                 />
                 <button
                   type="button"
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600"
+                  aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -138,27 +134,27 @@ export default function LoginPage() {
           <div className="mt-8">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-100" />
+                <div className="w-full border-t border-gray-100 dark:border-gray-700" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-white text-gray-400 font-medium">ou continuer avec</span>
+                <span className="px-4 bg-white dark:bg-gray-800 text-gray-400 font-medium">ou continuer avec</span>
               </div>
             </div>
 
             <div className="mt-6 grid grid-cols-2 gap-4">
-              <button className="flex justify-center items-center gap-2 px-4 py-3 border border-gray-200 rounded-2xl text-sm font-bold text-gray-700 hover:bg-gray-50 transition-all">
-                <Chrome className="w-5 h-5 text-red-500" />
+              <button type="button" className="flex justify-center items-center gap-2 px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-2xl text-sm font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all">
+                <Google className="w-5 h-5" />
                 Google
               </button>
-              <button className="flex justify-center items-center gap-2 px-4 py-3 border border-gray-200 rounded-2xl text-sm font-bold text-gray-700 hover:bg-gray-50 transition-all">
-                <Github className="w-5 h-5 text-gray-900" />
+              <button type="button" className="flex justify-center items-center gap-2 px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-2xl text-sm font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all">
+                <Github className="w-5 h-5 text-gray-900 dark:text-gray-100" />
                 GitHub
               </button>
             </div>
           </div>
         </div>
 
-        <p className="mt-8 text-center text-sm text-gray-500">
+        <p className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
           Pas encore de compte ?{" "}
           <Link href="/auth/register" className="font-bold text-green-600 hover:text-green-700">
             S&apos;inscrire

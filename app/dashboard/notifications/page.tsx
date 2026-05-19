@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { 
+import { useState } from "react";
+import {
   Bell,
   CheckCheck,
   MessageSquare,
@@ -9,8 +9,7 @@ import {
   RefreshCw,
   Info,
   ChevronRight,
-  MoreVertical,
-  Search
+  MoreVertical
 } from "@/lib/icons";
 import { notifications as allNotifs } from "@/lib/mock-data";
 import Link from "next/link";
@@ -19,8 +18,10 @@ export default function NotificationsPage() {
   const [activeTab, setActiveTab] = useState("all");
   const [notifications, setNotifications] = useState(allNotifs);
 
+  const unreadCount = notifications.filter(n => !n.isRead).length;
+
   const filteredNotifs = notifications.filter(n => {
-    if (activeTab === "unread") return !n.isRead;
+    if (activeTab === "unread")   return !n.isRead;
     if (activeTab === "mentions") return n.type === "mention";
     return true;
   });
@@ -29,27 +30,34 @@ export default function NotificationsPage() {
     setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
   };
 
-  const getTypeIcon = (type: string) => {
+  const getTypeConfig = (type: string) => {
     switch (type) {
       case "comment": return { icon: MessageSquare, color: "text-blue-600 bg-blue-50" };
-      case "mention": return { icon: Info, color: "text-purple-600 bg-purple-50" };
-      case "invite": return { icon: UserPlus, color: "text-green-600 bg-green-50" };
-      case "status": return { icon: RefreshCw, color: "text-orange-600 bg-orange-50" };
-      default: return { icon: Bell, color: "text-gray-600 bg-gray-50" };
+      case "mention": return { icon: Info,          color: "text-violet-600 bg-violet-50" };
+      case "invite":  return { icon: UserPlus,       color: "text-green-600 bg-green-50" };
+      case "status":  return { icon: RefreshCw,      color: "text-orange-600 bg-orange-50" };
+      default:        return { icon: Bell,           color: "text-gray-600 bg-gray-50" };
     }
   };
 
+  const tabs = [
+    { id: "all",      label: "Toutes",   count: notifications.length },
+    { id: "unread",   label: "Non lues", count: unreadCount },
+    { id: "mentions", label: "Mentions", count: notifications.filter(n => n.type === "mention").length },
+  ];
+
   return (
-    <div className="p-8 lg:p-12">
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+    <div className="p-6 lg:p-10">
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-4xl font-black text-gray-900 tracking-tight">Notifications</h1>
-          <p className="text-gray-500 font-medium mt-1">Restez au courant des dernières activités sur vos projets.</p>
+          <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100 tracking-tight">Notifications</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mt-1">Restez au courant des dernières activités sur vos projets.</p>
         </div>
-        
-        <button 
+
+        <button
+          type="button"
           onClick={markAllAsRead}
-          className="btn-outline py-2.5 px-6 text-sm flex items-center gap-2"
+          className="btn-outline py-2 px-5 text-sm flex items-center gap-2"
         >
           <CheckCheck className="w-4 h-4" />
           Tout marquer comme lu
@@ -57,70 +65,78 @@ export default function NotificationsPage() {
       </header>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 mb-10 overflow-x-auto no-scrollbar">
-        <button 
-          onClick={() => setActiveTab("all")}
-          className={`px-6 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap ${activeTab === "all" ? "bg-green-600 text-white shadow-md shadow-green-100" : "text-gray-500 hover:bg-gray-100"}`}
-        >
-          Toutes
-        </button>
-        <button 
-          onClick={() => setActiveTab("unread")}
-          className={`px-6 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === "unread" ? "bg-green-600 text-white shadow-md shadow-green-100" : "text-gray-500 hover:bg-gray-100"}`}
-        >
-          Non lues
-          <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">3</span>
-        </button>
-        <button 
-          onClick={() => setActiveTab("mentions")}
-          className={`px-6 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap ${activeTab === "mentions" ? "bg-green-600 text-white shadow-md shadow-green-100" : "text-gray-500 hover:bg-gray-100"}`}
-        >
-          Mentions
-        </button>
+      <div className="flex items-center gap-1 mb-6 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg w-fit">
+        {tabs.map((tab) => (
+          <button
+            type="button"
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all flex items-center gap-2 ${
+              activeTab === tab.id
+                ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm"
+                : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+            }`}
+          >
+            {tab.label}
+            {tab.count > 0 && (
+              <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full leading-none ${
+                activeTab === tab.id ? "bg-blue-500 text-white" : "bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300"
+              }`}>
+                {tab.count}
+              </span>
+            )}
+          </button>
+        ))}
       </div>
 
-      <div className="space-y-4 max-w-4xl mx-auto">
+      <div className="space-y-2 max-w-3xl">
         {filteredNotifs.length > 0 ? (
           filteredNotifs.map((notif) => {
-            const typeConfig = getTypeIcon(notif.type);
+            const { icon: Icon, color } = getTypeConfig(notif.type);
             return (
-              <Link 
+              <Link
                 key={notif.id}
                 href={notif.link}
-                className={`flex items-start gap-4 p-6 rounded-3xl border transition-all hover:translate-x-1 group ${
-                  notif.isRead 
-                    ? "bg-white border-gray-100 opacity-75" 
-                    : "bg-green-50/30 border-green-100 shadow-sm ring-1 ring-green-100"
+                className={`flex items-start gap-3 p-4 rounded-xl border transition-all hover:shadow-sm group ${
+                  notif.isRead
+                    ? "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                    : "bg-blue-50/40 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 shadow-sm"
                 }`}
               >
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${typeConfig.color}`}>
-                  <typeConfig.icon className="w-6 h-6" />
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${color}`}>
+                  <Icon className="w-4 h-4" />
                 </div>
-                
+
                 <div className="flex-1 min-w-0">
-                   <div className="flex items-center gap-2 mb-1">
-                      {!notif.isRead && <div className="w-2 h-2 bg-red-500 rounded-full" />}
-                      <span className="text-sm font-bold text-gray-900 group-hover:text-green-600 transition-colors" dangerouslySetInnerHTML={{ __html: notif.message }} />
-                   </div>
-                   <p className="text-xs font-bold text-gray-400 uppercase tracking-tight">Il y a 2 heures • Projet Alpha</p>
+                  <div className="flex items-center gap-2 mb-0.5">
+                    {!notif.isRead && <div className="w-2 h-2 bg-blue-500 rounded-full shrink-0" />}
+                    <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
+                      {notif.message}
+                    </p>
+                  </div>
+                  <p className="text-xs text-gray-400 dark:text-gray-500">Il y a 2 heures · Projet Alpha</p>
                 </div>
 
                 <div className="flex flex-col items-end gap-2 shrink-0">
-                   <button className="p-2 rounded-xl hover:bg-white text-gray-400 transition-all opacity-0 group-hover:opacity-100">
-                     <MoreVertical className="w-4 h-4" />
-                   </button>
-                   <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-green-500 transition-all" />
+                  <button
+                    type="button"
+                    className="p-1.5 rounded-lg hover:bg-white text-gray-400 transition-all opacity-0 group-hover:opacity-100"
+                    onClick={(e) => e.preventDefault()}
+                  >
+                    <MoreVertical className="w-3.5 h-3.5" />
+                  </button>
+                  <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-blue-500 transition-all" />
                 </div>
               </Link>
             );
           })
         ) : (
-          <div className="py-20 text-center bg-white rounded-[2.5rem] border border-dashed border-gray-200">
-            <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Bell className="w-10 h-10 text-gray-300" />
+          <div className="py-16 text-center bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
+            <div className="w-16 h-16 bg-gray-50 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Bell className="w-8 h-8 text-gray-300 dark:text-gray-500" />
             </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Tout est calme ici</h3>
-            <p className="text-gray-500 font-medium">Vous n'avez pas de nouvelles notifications pour le moment.</p>
+            <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 mb-1">Tout est calme ici</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Vous n&apos;avez pas de nouvelles notifications pour le moment.</p>
           </div>
         )}
       </div>

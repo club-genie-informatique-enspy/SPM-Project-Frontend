@@ -2,12 +2,43 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Layers, Eye, EyeOff, Github, Chrome } from "@/lib/icons";
+import { Layers, Eye, EyeOff, Github } from "@/lib/icons";
+import { Google } from "@/lib/icons";
 import { useRouter } from "next/navigation";
+
+function getStrength(pwd: string): number {
+  if (!pwd) return 0;
+  let score = 0;
+  if (pwd.length >= 8)             score++;
+  if (pwd.length >= 12)            score++;
+  if (/[A-Z]/.test(pwd))          score++;
+  if (/[0-9]/.test(pwd))          score++;
+  if (/[^A-Za-z0-9]/.test(pwd))   score++;
+  return score;
+}
+
+const STRENGTH_LABELS = ["", "Très faible", "Faible", "Moyen", "Fort", "Très fort"];
+const STRENGTH_COLORS = [
+  "",
+  "bg-red-500",
+  "bg-orange-400",
+  "bg-yellow-400",
+  "bg-green-400",
+  "bg-green-600",
+];
+const STRENGTH_TEXT = [
+  "",
+  "text-red-500",
+  "text-orange-500",
+  "text-yellow-600",
+  "text-green-500",
+  "text-green-600",
+];
 
 export default function RegisterPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -18,11 +49,15 @@ export default function RegisterPage() {
     terms: false,
   });
 
+  const strength = getStrength(formData.password);
+  const confirmTouched = formData.confirmPassword.length > 0;
+  const matches = formData.password === formData.confirmPassword;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    if (formData.password !== formData.confirmPassword) {
+    if (!matches) {
       setError("Les mots de passe ne correspondent pas.");
       return;
     }
@@ -32,9 +67,7 @@ export default function RegisterPage() {
     try {
       const response = await fetch("/api/auth/register", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: formData.name,
           email: formData.email,
@@ -49,8 +82,8 @@ export default function RegisterPage() {
       } else {
         setError(data.message || "Échec de l'inscription. L'utilisateur existe peut-être déjà.");
       }
-    } catch (error) {
-      console.error("Register error:", error);
+    } catch (err) {
+      console.error("Register error:", err);
       setError("Erreur de connexion à l'API locale.");
     } finally {
       setIsLoading(false);
@@ -58,22 +91,22 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f9fafb] flex flex-col justify-center py-12 px-6 lg:px-8">
+    <div className="min-h-screen bg-[#f9fafb] dark:bg-gray-900 flex flex-col justify-center py-12 px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
         <Link href="/" className="inline-flex items-center gap-2 mb-8">
           <div className="bg-green-600 p-1.5 rounded-xl">
             <Layers className="w-8 h-8 text-white" />
           </div>
-          <span className="text-3xl font-black text-gray-900 tracking-tighter">SPM</span>
+          <span className="text-3xl font-black text-gray-900 dark:text-gray-100 tracking-tighter">SPM</span>
         </Link>
-        <h2 className="text-3xl font-black text-gray-900 tracking-tight">Créer un compte</h2>
-        <p className="mt-2 text-sm text-gray-500">
+        <h2 className="text-3xl font-black text-gray-900 dark:text-gray-100 tracking-tight">Créer un compte</h2>
+        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
           Rejoignez des milliers d&apos;équipes agiles
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-10 px-8 shadow-2xl shadow-gray-200/50 rounded-[2.5rem] border border-gray-100">
+        <div className="bg-white dark:bg-gray-800 py-10 px-8 shadow-2xl shadow-gray-200/50 dark:shadow-none rounded-[2.5rem] border border-gray-100 dark:border-gray-700">
           <form className="space-y-5" onSubmit={handleSubmit}>
             {error && (
               <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
@@ -82,7 +115,7 @@ export default function RegisterPage() {
             )}
 
             <div>
-              <label htmlFor="name" className="block text-sm font-bold text-gray-700 mb-2">
+              <label htmlFor="name" className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                 Nom complet
               </label>
               <input
@@ -92,13 +125,13 @@ export default function RegisterPage() {
                 required
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="block w-full px-4 py-3 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                className="block w-full px-4 py-3 rounded-2xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all placeholder:text-gray-400"
                 placeholder="Ex: Azangue Delmat"
               />
             </div>
 
             <div>
-              <label htmlFor="email" className="block text-sm font-bold text-gray-700 mb-2">
+              <label htmlFor="email" className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                 Email
               </label>
               <input
@@ -108,13 +141,14 @@ export default function RegisterPage() {
                 required
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="block w-full px-4 py-3 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                className="block w-full px-4 py-3 rounded-2xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all placeholder:text-gray-400"
                 placeholder="nom@exemple.com"
               />
             </div>
 
+            {/* Password with strength meter */}
             <div>
-              <label htmlFor="password" className="block text-sm font-bold text-gray-700 mb-2">
+              <label htmlFor="password" className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                 Mot de passe
               </label>
               <div className="relative">
@@ -125,34 +159,74 @@ export default function RegisterPage() {
                   required
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="block w-full px-4 py-3 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                  className="block w-full px-4 py-3 pr-12 rounded-2xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all placeholder:text-gray-400"
                   placeholder="••••••••"
                   minLength={8}
                 />
                 <button
                   type="button"
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600"
+                  aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
+
+              {/* Strength bar */}
+              {formData.password && (
+                <div className="mt-2">
+                  <div className="flex gap-1 mb-1">
+                    {[1, 2, 3, 4, 5].map((lvl) => (
+                      <div
+                        key={lvl}
+                        className={`h-1 flex-1 rounded-full transition-all ${lvl <= strength ? STRENGTH_COLORS[strength] : "bg-gray-200 dark:bg-gray-600"}`}
+                      />
+                    ))}
+                  </div>
+                  <p className={`text-xs font-semibold ${STRENGTH_TEXT[strength]}`}>
+                    {STRENGTH_LABELS[strength]}
+                  </p>
+                </div>
+              )}
             </div>
 
+            {/* Confirm password with match indicator */}
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-bold text-gray-700 mb-2">
+              <label htmlFor="confirmPassword" className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                 Confirmer le mot de passe
               </label>
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                required
-                value={formData.confirmPassword}
-                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                className="block w-full px-4 py-3 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                placeholder="••••••••"
-              />
+              <div className="relative">
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showConfirm ? "text" : "password"}
+                  required
+                  value={formData.confirmPassword}
+                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                  className={`block w-full px-4 py-3 pr-12 rounded-2xl border focus:outline-none focus:ring-2 focus:border-transparent transition-all placeholder:text-gray-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
+                    confirmTouched
+                      ? matches
+                        ? "border-green-400 focus:ring-green-500"
+                        : "border-red-400 focus:ring-red-400"
+                      : "border-gray-200 dark:border-gray-600 focus:ring-green-500"
+                  }`}
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  aria-label={showConfirm ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  onClick={() => setShowConfirm(!showConfirm)}
+                >
+                  {showConfirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+              {confirmTouched && (
+                <p className={`mt-1.5 text-xs font-semibold ${matches ? "text-green-500" : "text-red-500"}`}>
+                  {matches ? "✓ Les mots de passe correspondent" : "✗ Les mots de passe ne correspondent pas"}
+                </p>
+              )}
             </div>
 
             <div className="flex items-start">
@@ -168,7 +242,7 @@ export default function RegisterPage() {
                 />
               </div>
               <div className="ml-3 text-sm">
-                <label htmlFor="terms" className="text-gray-500">
+                <label htmlFor="terms" className="text-gray-500 dark:text-gray-400">
                   J&apos;accepte les{" "}
                   <Link href="/terms" className="font-bold text-green-600 hover:text-green-700">
                     conditions d&apos;utilisation
@@ -191,27 +265,27 @@ export default function RegisterPage() {
           <div className="mt-8">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-100" />
+                <div className="w-full border-t border-gray-100 dark:border-gray-700" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-white text-gray-400 font-medium">ou s&apos;inscrire avec</span>
+                <span className="px-4 bg-white dark:bg-gray-800 text-gray-400 font-medium">ou s&apos;inscrire avec</span>
               </div>
             </div>
 
             <div className="mt-6 grid grid-cols-2 gap-4">
-              <button className="flex justify-center items-center gap-2 px-4 py-3 border border-gray-200 rounded-2xl text-sm font-bold text-gray-700 hover:bg-gray-50 transition-all">
-                <Chrome className="w-5 h-5 text-red-500" />
+              <button type="button" className="flex justify-center items-center gap-2 px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-2xl text-sm font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all">
+                <Google className="w-5 h-5" />
                 Google
               </button>
-              <button className="flex justify-center items-center gap-2 px-4 py-3 border border-gray-200 rounded-2xl text-sm font-bold text-gray-700 hover:bg-gray-50 transition-all">
-                <Github className="w-5 h-5 text-gray-900" />
+              <button type="button" className="flex justify-center items-center gap-2 px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-2xl text-sm font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all">
+                <Github className="w-5 h-5 text-gray-900 dark:text-gray-100" />
                 GitHub
               </button>
             </div>
           </div>
         </div>
 
-        <p className="mt-8 text-center text-sm text-gray-500">
+        <p className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
           Déjà un compte ?{" "}
           <Link href="/auth/login" className="font-bold text-green-600 hover:text-green-700">
             Se connecter

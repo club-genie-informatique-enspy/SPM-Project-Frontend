@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Folder, Users, MoreHorizontal, ArrowRight } from "@/lib/icons";
+import { Folder, MoreHorizontal, ArrowRight } from "@/lib/icons";
 import { Project } from "@/types";
 import Badge from "./Badge";
 import Avatar from "./Avatar";
@@ -14,7 +14,7 @@ interface ProjectCardProps {
 
 const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
   const router = useRouter();
-  
+
   const members = project.members
     .map((m) => allUsers.find((u) => u.id === m.userId))
     .filter(Boolean)
@@ -25,53 +25,59 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
   return (
     <div
       onClick={() => router.push(`/dashboard/projects/${project.id}/kanban`)}
-      className="group bg-white p-6 rounded-3xl shadow-sm border border-gray-100 hover:shadow-lg hover:border-green-100 transition-all cursor-pointer relative overflow-hidden"
+      className="group bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md hover:border-blue-200 dark:hover:border-blue-800 transition-all cursor-pointer relative overflow-hidden"
     >
-      <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button className="p-2 rounded-full hover:bg-gray-50">
-          <MoreHorizontal className="w-5 h-5 text-gray-400" />
+      <div className="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <MoreHorizontal className="w-4 h-4 text-gray-400" />
         </button>
       </div>
 
-      <div className="flex items-center gap-4 mb-6">
-        <div className="flex items-center justify-center w-12 h-12 bg-green-50 rounded-2xl text-green-600 group-hover:bg-green-600 group-hover:text-white transition-colors">
-          <Folder className="w-6 h-6" />
+      <div className="flex items-center gap-3 mb-4">
+        <div className="flex items-center justify-center w-10 h-10 bg-blue-50 dark:bg-blue-900/30 rounded-xl text-blue-600 dark:text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition-colors shrink-0">
+          <Folder className="w-5 h-5" />
         </div>
-        <div>
-          <Badge variant={project.status} className="mb-1" />
-          <h3 className="text-lg font-bold text-gray-900 line-clamp-1">{project.name}</h3>
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 mb-0.5">
+            <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{project.key}</span>
+            <Badge variant={project.status} />
+          </div>
+          <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 line-clamp-1">{project.name}</h3>
         </div>
       </div>
 
-      <p className="text-sm text-gray-500 mb-6 line-clamp-2 min-h-[40px]">
+      <p className="text-xs text-gray-500 dark:text-gray-400 mb-4 line-clamp-2 min-h-[32px]">
         {project.description}
       </p>
 
-      <div className="mb-6">
-        <div className="flex justify-between items-end mb-2">
-          <span className="text-xs font-medium text-gray-400">Progression</span>
-          <span className="text-xs font-bold text-green-600">65%</span>
+      <div className="mb-4">
+        <div className="flex justify-between items-center mb-1.5">
+          <span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase">Progression</span>
+          <span className="text-[10px] font-bold text-blue-600">65%</span>
         </div>
-        <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-          <div className="w-[65%] h-full bg-green-500 rounded-full" />
+        <div className="w-full h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+          <div className="w-[65%] h-full bg-blue-500 rounded-full" />
         </div>
       </div>
 
       <div className="flex items-center justify-between">
-        <div className="flex -space-x-3">
+        <div className="flex -space-x-2">
           {members.map((user, idx) => (
-            <Avatar key={user?.id || idx} name={user?.name || ""} size="sm" className="ring-2 ring-white" />
+            <Avatar key={user?.id || idx} name={user?.name || ""} size="sm" className="ring-2 ring-white dark:ring-gray-800" />
           ))}
           {extraMembers > 0 && (
-            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 border-2 border-white text-[10px] font-bold text-gray-600">
+            <div className="flex items-center justify-center w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-700 border-2 border-white dark:border-gray-800 text-[10px] font-bold text-gray-600 dark:text-gray-400">
               +{extraMembers}
             </div>
           )}
         </div>
 
-        <div className="flex items-center gap-1 text-xs font-bold text-green-600 group-hover:translate-x-1 transition-transform">
+        <div className="flex items-center gap-1 text-xs font-semibold text-blue-600 group-hover:translate-x-0.5 transition-transform">
           <span>Ouvrir</span>
-          <ArrowRight className="w-4 h-4" />
+          <ArrowRight className="w-3.5 h-3.5" />
         </div>
       </div>
     </div>

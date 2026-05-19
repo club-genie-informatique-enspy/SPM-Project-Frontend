@@ -56,7 +56,7 @@ export const projects: Project[] = [
       { userId: "user-1", projectId: "project-1", role: "owner", joinedAt: "2024-01-01T00:00:00Z", status: "active" },
       { userId: "user-2", projectId: "project-1", role: "admin", joinedAt: "2024-01-02T00:00:00Z", status: "active" },
       { userId: "user-3", projectId: "project-1", role: "write", joinedAt: "2024-01-03T00:00:00Z", status: "active" },
-      { userId: "user-4", projectId: "project-1", role: "read", joinedAt: "2024-01-04T00:00:00Z", status: "active" },
+      { userId: "user-4", projectId: "project-1", role: "read",  joinedAt: "2024-01-04T00:00:00Z", status: "active" },
     ],
     createdAt: "2024-01-01T00:00:00Z",
     updatedAt: "2024-01-01T00:00:00Z",
@@ -72,7 +72,7 @@ export const projects: Project[] = [
     members: [
       { userId: "user-1", projectId: "project-2", role: "owner", joinedAt: "2024-01-01T00:00:00Z", status: "active" },
       { userId: "user-2", projectId: "project-2", role: "write", joinedAt: "2024-01-02T00:00:00Z", status: "active" },
-      { userId: "user-5", projectId: "project-2", role: "read", joinedAt: "2024-01-05T00:00:00Z", status: "active" },
+      { userId: "user-5", projectId: "project-2", role: "read",  joinedAt: "2024-01-05T00:00:00Z", status: "active" },
     ],
     createdAt: "2024-01-10T00:00:00Z",
     updatedAt: "2024-01-10T00:00:00Z",
@@ -94,29 +94,67 @@ export const projects: Project[] = [
   },
 ];
 
-const generateTasks = (projectId: string, count: number): Task[] => {
-  const tasks: Task[] = [];
-  const statuses: TaskStatus[] = ["todo", "in_progress", "in_review", "done"];
-  const priorities: Priority[] = ["low", "medium", "high", "critical"];
+const taskTitles: Record<string, string[]> = {
+  "project-1": [
+    "Refonte de la page d'accueil",
+    "Intégration du lecteur vidéo",
+    "Système de quiz interactif",
+    "Gestion des certificats",
+    "Tableau de bord étudiant",
+    "API d'authentification SSO",
+    "Notifications par email",
+    "Module de paiement en ligne",
+    "Système de recommandations",
+    "Tests de performance",
+    "Accessibilité WCAG 2.1",
+    "Internationalisation i18n",
+  ],
+  "project-2": [
+    "Écran de connexion biométrique",
+    "Virement bancaire inter-comptes",
+    "Historique des transactions",
+    "Notifications push temps réel",
+    "Scanner de QR code paiement",
+    "Rapport mensuel PDF",
+    "Sécurité 2FA",
+    "Onboarding utilisateur",
+  ],
+  "project-3": [
+    "Maquettes Figma v2",
+    "Architecture des pages",
+    "Optimisation SEO",
+    "Galerie photo campus",
+    "Formulaire de contact",
+  ],
+};
 
-  for (let i = 1; i <= count; i++) {
-    const status = i <= 3 ? "todo" : i <= 5 ? "in_progress" : i <= 7 ? "in_review" : "done";
-    tasks.push({
-      id: `task-${projectId}-${i}`,
-      title: `Tâche ${i} pour ${projectId}`,
-      description: `Description détaillée de la tâche ${i}.`,
-      status: status as TaskStatus,
-      priority: priorities[Math.floor(Math.random() * priorities.length)],
+const generateTasks = (projectId: string, count: number): Task[] => {
+  const priorities: Priority[] = ["low", "medium", "high", "critical"];
+  const assignees = ["user-1", "user-2", "user-3", "user-4", "user-5"];
+  const tagSets = [["Frontend"], ["API"], ["Frontend", "API"], ["Tests"], ["Design"]];
+
+  return Array.from({ length: count }, (_, i) => {
+    const idx = i + 1;
+    const statusIndex = i < 3 ? 0 : i < 5 ? 1 : i < 7 ? 2 : 3;
+    const statuses: TaskStatus[] = ["todo", "in_progress", "in_review", "done"];
+    const titles = taskTitles[projectId];
+    const due = new Date(2026, 4, 15 + (i * 3) % 20);
+
+    return {
+      id: `task-${projectId}-${idx}`,
+      title: titles?.[i] ?? `Tâche ${idx}`,
+      description: `Description détaillée de cette tâche. Elle couvre les aspects techniques et fonctionnels nécessaires à la livraison.`,
+      status: statuses[statusIndex],
+      priority: priorities[i % priorities.length],
       projectId,
-      assigneeId: users[Math.floor(Math.random() * users.length)].id,
-      storyPoints: Math.floor(Math.random() * 8) + 1,
-      dueDate: new Date(Date.now() + Math.random() * 10 * 24 * 60 * 60 * 1000).toISOString(),
-      tags: ["Frontend", "API"].slice(0, Math.floor(Math.random() * 2) + 1),
+      assigneeId: assignees[i % assignees.length],
+      storyPoints: [1, 2, 3, 5, 8][i % 5],
+      dueDate: due.toISOString(),
+      tags: tagSets[i % tagSets.length],
       createdAt: "2024-02-01T00:00:00Z",
       updatedAt: "2024-02-01T00:00:00Z",
-    });
-  }
-  return tasks;
+    };
+  });
 };
 
 export const tasks: Task[] = [
@@ -130,7 +168,7 @@ export const notifications: Notification[] = [
     id: "notif-1",
     userId: "user-1",
     type: "comment",
-    message: "**Iness Kamga** a commenté votre tâche 'Refonte du Header'.",
+    message: "Iness Kamga a commenté votre tâche « Refonte de la page d'accueil ».",
     isRead: false,
     link: "/dashboard/projects/project-1/tasks/task-project-1-1",
     createdAt: "2024-02-15T10:00:00Z",
@@ -139,7 +177,7 @@ export const notifications: Notification[] = [
     id: "notif-2",
     userId: "user-1",
     type: "invite",
-    message: "**Marie Ngo** vous a invité au projet 'App Mobile Banking'.",
+    message: "Marie Ngo vous a invité au projet « App Mobile Banking ».",
     isRead: true,
     link: "/dashboard/projects/project-2",
     createdAt: "2024-02-14T09:00:00Z",
@@ -148,7 +186,7 @@ export const notifications: Notification[] = [
     id: "notif-3",
     userId: "user-1",
     type: "status",
-    message: "Le statut de '**Site Vitrine ENSPY**' est passé à 'Brouillon'.",
+    message: "Le statut de « Site Vitrine ENSPY » est passé à Brouillon.",
     isRead: false,
     link: "/dashboard/projects/project-3",
     createdAt: "2024-02-13T08:00:00Z",
@@ -157,7 +195,7 @@ export const notifications: Notification[] = [
     id: "notif-4",
     userId: "user-1",
     type: "mention",
-    message: "**Tagatsing Samuel** vous a mentionné dans une tâche.",
+    message: "Tagatsing Samuel vous a mentionné dans une tâche.",
     isRead: false,
     link: "/dashboard/projects/project-1",
     createdAt: "2024-02-12T07:00:00Z",
@@ -175,7 +213,7 @@ export const notifications: Notification[] = [
     id: "notif-6",
     userId: "user-1",
     type: "status",
-    message: "Tâche 'Validation API' terminée.",
+    message: "Tâche « Validation API » marquée comme terminée.",
     isRead: false,
     link: "/dashboard/projects/project-1/kanban",
     createdAt: "2024-02-10T05:00:00Z",
