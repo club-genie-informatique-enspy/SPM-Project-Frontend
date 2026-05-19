@@ -1,0 +1,54 @@
+name: Sync Fork from Upstream
+
+on:
+  schedule:
+    - cron: "0 6 * * *"   # every day at 06:00 UTC
+  workflow_dispatch:        # manual trigger from GitHub UI
+
+jobs:
+  sync:
+    name: Sync master with upstream
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git identity
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add upstream remote
+        run: |
+          git remote add upstream https://github.com/club-genie-informatique-enspy/SPM-Project-Frontend.git
+
+      - name: Fetch upstream
+        run: git fetch upstream master
+
+      - name: Check for new commits
+        id: check
+        run: |
+          BEHIND=$(git rev-list HEAD..upstream/master --count)
+          echo "behind=$BEHIND" >> $GITHUB_OUTPUT
+          echo "Fork is $BEHIND commit(s) behind upstream."
+
+      - name: Merge upstream into fork
+        if: steps.check.outputs.behind != '0'
+        run: |
+          git merge upstream/master --no-edit --allow-unrelated-histories
+
+      - name: Push to fork
+        if: steps.check.outputs.behind != '0'
+        run: |
+          git push origin master
+
+      - name: Already up to date
+        if: steps.check.outputs.behind == '0'
+        run: echo "Fork is already up to date — nothing to do."

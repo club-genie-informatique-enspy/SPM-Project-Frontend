@@ -87,7 +87,7 @@ export default function LandingPage() {
             SPM vous aide à organiser vos tâches, suivre l&apos;avancement et fédérer vos équipes — le tout dans une interface pensée pour l&apos;efficacité.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20 animate-fade-in delay-300">
-            <Link href="/auth/register" className="btn-primary w-full sm:w-auto">
+            <Link href="/auth/register" className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-full shadow-md transition-all active:scale-95 w-full sm:w-auto text-center">
               Commencer maintenant
             </Link>
             <Link href="#features" className="btn-outline w-full sm:w-auto">
@@ -187,7 +187,7 @@ export default function LandingPage() {
             Rejoignez des milliers d&apos;équipes qui livrent plus vite avec SPM.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 relative z-10">
-            <Link href="/auth/register" className="btn-primary w-full sm:w-auto">
+            <Link href="/auth/register" className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-full shadow-md transition-all active:scale-95 w-full sm:w-auto text-center">
               S&apos;inscrire gratuitement
             </Link>
             <Link href="#features" className="text-white font-bold px-8 py-3 rounded-full border-2 border-white/20 hover:bg-white/10 transition-all flex items-center gap-2 group">
