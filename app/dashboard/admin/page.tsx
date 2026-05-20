@@ -2,6 +2,8 @@
 
 import { useState, useMemo } from "react";
 import {
+  CheckCircle2,
+  ChevronRight,
   Users,
   ScrollText,
   Settings2,
@@ -12,9 +14,14 @@ import {
   Ban,
   Download,
   Database,
+  Globe,
+  Info,
+  Key,
+  Lock,
   Mail
 } from "@/lib/icons";
 import { users as allUsers } from "@/lib/mock-data";
+import Link from "next/link";
 import Avatar from "@/components/ui/Avatar";
 import Badge from "@/components/ui/Badge";
 import { User } from "@/types";
@@ -26,16 +33,16 @@ export default function AdminPage() {
   const [searchTerm, setSearchTerm] = useState("");
 
   const tabs = [
-    { id: "users",  label: "Utilisateurs", icon: Users },
-    { id: "logs",   label: "Logs système", icon: ScrollText },
-    { id: "config", label: "Configuration", icon: Settings2 },
+    { id: "users",  label: "Accès au compte", icon: Users },
+    { id: "logs",   label: "Audit du compte", icon: ScrollText },
+    { id: "config", label: "Paramètres du compte", icon: Settings2 },
   ];
 
   const mockLogs = useMemo(() => Array.from({ length: 15 }, (_, i) => ({
     id: `log-${i}`,
     timestamp: new Date(LOG_BASE - i * 1000 * 60 * 60).toLocaleString("fr-FR"),
     user: allUsers[i % allUsers.length].name,
-    action: i % 3 === 0 ? "Connexion" : i % 3 === 1 ? "Suppression Projet" : "Mise à jour Tâche",
+    action: i % 4 === 0 ? "Connexion" : i % 4 === 1 ? "Invitation compte" : i % 4 === 2 ? "Rôle global modifié" : "Paramètres compte",
     ip: `192.168.1.${10 + i}`,
   })), []);
 
@@ -46,19 +53,43 @@ export default function AdminPage() {
 
   return (
     <div className="p-6 lg:p-10">
-      <header className="mb-8">
-        <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100 tracking-tight">Administration</h1>
-        <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mt-1">Gérez la plateforme, les utilisateurs et la configuration globale.</p>
+      <header className="mb-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-2">Compte SPM</p>
+            <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100 tracking-tight">Administration du compte</h1>
+            <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mt-1">
+              Gérez les accès globaux, la sécurité et les paramètres de votre espace de travail.
+            </p>
+          </div>
+          <Link
+            href="/dashboard/projects"
+            className="inline-flex items-center gap-2 text-sm font-bold text-blue-600 dark:text-blue-400 hover:underline"
+          >
+            Administrer un projet
+            <ChevronRight className="w-4 h-4" />
+          </Link>
+        </div>
       </header>
 
+      <div className="mb-6 rounded-xl border border-blue-200 dark:border-blue-900/60 bg-blue-50 dark:bg-blue-950/30 p-4 flex gap-3">
+        <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-bold text-gray-900 dark:text-gray-100">Cette page concerne le compte, pas un projet.</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+            Les rôles ci-dessous sont globaux. Les membres, permissions, paramètres et suppressions d&apos;un projet se gèrent depuis la page du projet concerné.
+          </p>
+        </div>
+      </div>
+
       {/* Tabs */}
-      <div className="flex items-center gap-1 mb-6 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg w-fit">
+      <div className="flex items-center gap-1 mb-6 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg w-fit max-w-full overflow-x-auto">
         {tabs.map((tab) => (
           <button
             type="button"
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-5 py-2 rounded-md text-sm font-semibold transition-all flex items-center gap-2 ${
+            className={`px-5 py-2 rounded-md text-sm font-semibold transition-all flex items-center gap-2 whitespace-nowrap ${
               activeTab === tab.id
                 ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm"
                 : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
@@ -78,7 +109,7 @@ export default function AdminPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Rechercher par nom ou email..."
+                  placeholder="Rechercher un utilisateur du compte..."
                   className="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all placeholder:text-gray-400"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -94,8 +125,8 @@ export default function AdminPage() {
                 <thead>
                   <tr className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
                     <th className="px-5 py-3 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Utilisateur</th>
-                    <th className="px-5 py-3 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Rôle</th>
-                    <th className="px-5 py-3 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Statut</th>
+                    <th className="px-5 py-3 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Rôle global</th>
+                    <th className="px-5 py-3 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Accès compte</th>
                     <th className="px-5 py-3 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest text-right">Actions</th>
                   </tr>
                 </thead>
@@ -119,10 +150,10 @@ export default function AdminPage() {
                       </td>
                       <td className="px-5 py-3.5 text-right">
                         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button type="button" className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-gray-600 hover:shadow-sm text-gray-400 hover:text-blue-600 transition-all" title="Changer le rôle">
+                          <button type="button" className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-gray-600 hover:shadow-sm text-gray-400 hover:text-blue-600 transition-all" title="Changer le rôle global">
                             <ShieldCheck className="w-4 h-4" />
                           </button>
-                          <button type="button" className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-gray-600 hover:shadow-sm text-gray-400 hover:text-orange-500 transition-all" title="Désactiver">
+                          <button type="button" className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-gray-600 hover:shadow-sm text-gray-400 hover:text-orange-500 transition-all" title="Suspendre l'accès au compte">
                             <Ban className="w-4 h-4" />
                           </button>
                           <button type="button" className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-gray-600 hover:shadow-sm text-gray-400">
@@ -141,7 +172,7 @@ export default function AdminPage() {
         {activeTab === "logs" && (
           <div>
             <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
-              <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">Journal d&apos;activités</h3>
+              <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">Journal d&apos;activités du compte</h3>
               <button type="button" className="text-xs font-bold text-blue-600 uppercase tracking-widest flex items-center gap-2 hover:underline">
                 <Download className="w-4 h-4" />
                 Exporter CSV
@@ -164,9 +195,10 @@ export default function AdminPage() {
                       <td className="px-5 py-3 text-sm font-semibold text-gray-900 dark:text-gray-100">{log.user}</td>
                       <td className="px-5 py-3">
                         <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase ${
-                          log.action === "Connexion"           ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" :
-                          log.action === "Suppression Projet"  ? "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400" :
-                          "bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400"
+                          log.action === "Connexion"             ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" :
+                          log.action === "Invitation compte"     ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400" :
+                          log.action === "Rôle global modifié"   ? "bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400" :
+                          "bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400"
                         }`}>
                           {log.action}
                         </span>
@@ -181,24 +213,49 @@ export default function AdminPage() {
         )}
 
         {activeTab === "config" && (
-          <div className="p-8 lg:p-12 max-w-2xl">
+          <div className="p-8 lg:p-12 max-w-3xl">
             <div className="space-y-10">
               <div>
                 <div className="flex items-center gap-3 mb-5">
+                  <Globe className="w-5 h-5 text-blue-600" />
+                  <h3 className="text-base font-black text-gray-900 dark:text-gray-100">Identité du compte</h3>
+                </div>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Nom de l&apos;espace</label>
+                    <input
+                      type="text"
+                      defaultValue="SPM Workspace"
+                      className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Domaine autorisé</label>
+                    <input
+                      type="text"
+                      defaultValue="example.com"
+                      className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center gap-3 mb-5">
                   <Database className="w-5 h-5 text-blue-600" />
-                  <h3 className="text-base font-black text-gray-900 dark:text-gray-100">Stockage</h3>
+                  <h3 className="text-base font-black text-gray-900 dark:text-gray-100">Limites du compte</h3>
                 </div>
                 <div className="space-y-5">
                   <div>
                     <div className="flex justify-between items-center mb-2">
-                      <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Quota max par projet</label>
-                      <span className="text-sm font-bold text-blue-600">500 MB</span>
+                      <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Quota total du compte</label>
+                      <span className="text-sm font-bold text-blue-600">25 GB</span>
                     </div>
                     <input type="range" className="w-full h-1.5 bg-gray-100 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-blue-600" />
                   </div>
                   <div>
                     <div className="flex justify-between items-center mb-2">
-                      <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Limite upload fichier</label>
+                      <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Taille maximale d&apos;un fichier</label>
                       <span className="text-sm font-bold text-blue-600">25 MB</span>
                     </div>
                     <input type="range" className="w-full h-1.5 bg-gray-100 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-blue-600" />
@@ -208,8 +265,41 @@ export default function AdminPage() {
 
               <div>
                 <div className="flex items-center gap-3 mb-5">
+                  <Lock className="w-5 h-5 text-blue-600" />
+                  <h3 className="text-base font-black text-gray-900 dark:text-gray-100">Sécurité globale</h3>
+                </div>
+                <div className="space-y-3">
+                  <label className="flex items-center justify-between gap-4 p-3 rounded-lg border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-all">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Key className="w-4 h-4 text-gray-400" />
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Authentification forte</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Demander un second facteur pour les administrateurs globaux.</p>
+                      </div>
+                    </div>
+                    <div className="w-10 h-5 rounded-full relative p-0.5 shadow-inner transition-colors bg-blue-500 shrink-0">
+                      <div className="w-4 h-4 bg-white rounded-full shadow-md transition-transform translate-x-5" />
+                    </div>
+                  </label>
+                  <label className="flex items-center justify-between gap-4 p-3 rounded-lg border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-all">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <CheckCircle2 className="w-4 h-4 text-gray-400" />
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Validation des invitations</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Un administrateur global valide les nouveaux comptes avant activation.</p>
+                      </div>
+                    </div>
+                    <div className="w-10 h-5 rounded-full relative p-0.5 shadow-inner transition-colors bg-gray-200 dark:bg-gray-600 shrink-0">
+                      <div className="w-4 h-4 bg-white rounded-full shadow-md transition-transform" />
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center gap-3 mb-5">
                   <Mail className="w-5 h-5 text-blue-600" />
-                  <h3 className="text-base font-black text-gray-900 dark:text-gray-100">Emails</h3>
+                  <h3 className="text-base font-black text-gray-900 dark:text-gray-100">Emails du compte</h3>
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Email expéditeur</label>
@@ -223,7 +313,7 @@ export default function AdminPage() {
 
               <div className="pt-6 border-t border-gray-100 dark:border-gray-700 flex justify-end">
                 <button type="button" className="btn-primary py-2.5 px-8">
-                  Sauvegarder la configuration
+                  Sauvegarder le compte
                 </button>
               </div>
             </div>

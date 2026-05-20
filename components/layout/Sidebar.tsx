@@ -34,7 +34,7 @@ const Sidebar = () => {
   ];
 
   const adminItems = [
-    { name: "Administration", icon: ShieldCheck, href: "/dashboard/admin" },
+    { name: "Admin compte", icon: ShieldCheck, href: "/dashboard/admin" },
   ];
 
   const isActive = (href: string) => {
@@ -109,7 +109,7 @@ const Sidebar = () => {
         {currentUser.role === "admin" && (
           <>
             {!isCollapsed && (
-              <p className="px-3 mt-6 mb-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Admin</p>
+              <p className="px-3 mt-6 mb-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Compte</p>
             )}
             {isCollapsed && <div className="my-3 mx-2 border-t border-white/10" />}
             {adminItems.map((item) => {

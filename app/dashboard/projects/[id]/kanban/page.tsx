@@ -13,6 +13,7 @@ import {
 import { projects, tasks as allTasks } from "@/lib/mock-data";
 import TaskCard from "@/components/ui/TaskCard";
 import TaskDetailModal from "@/components/ui/TaskDetailModal";
+import CreateTaskModal from "@/components/ui/CreateTaskModal";
 import Link from "next/link";
 import { TaskStatus, Task } from "@/types";
 
@@ -29,6 +30,10 @@ export default function KanbanPage({ params }: { params: Promise<{ id: string }>
   const project = projects.find(p => p.id === id) || projects[0];
   const [tasks, setTasks] = useState<Task[]>(allTasks.filter(t => t.projectId === project.id));
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [createStatus, setCreateStatus] = useState<TaskStatus | null>(null);
+
+  const openCreate = (status: TaskStatus = "todo") => setCreateStatus(status);
+  const handleCreate = (task: Task) => setTasks(prev => [...prev, task]);
 
   const columns: { title: string; status: TaskStatus }[] = [
     { title: "À faire",  status: "todo" },
@@ -80,7 +85,7 @@ export default function KanbanPage({ params }: { params: Promise<{ id: string }>
             <button type="button" aria-label="Rechercher" className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 transition-all">
               <Search className="w-4 h-4" />
             </button>
-            <button type="button" className="btn-primary py-1.5 px-4 text-sm flex items-center gap-1.5">
+            <button type="button" onClick={() => openCreate("todo")} className="btn-primary py-1.5 px-4 text-sm flex items-center gap-1.5">
               <Plus className="w-3.5 h-3.5" />
               Nouvelle tâche
             </button>
@@ -127,7 +132,7 @@ export default function KanbanPage({ params }: { params: Promise<{ id: string }>
                       {columnTasks.length}
                     </span>
                   </div>
-                  <button type="button" aria-label="Ajouter une tâche" className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-400 transition-colors">
+                  <button type="button" aria-label="Ajouter une tâche" onClick={() => openCreate(column.status)} className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-400 transition-colors">
                     <Plus className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -145,6 +150,7 @@ export default function KanbanPage({ params }: { params: Promise<{ id: string }>
 
                   <button
                     type="button"
+                    onClick={() => openCreate(column.status)}
                     className="w-full py-2.5 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 text-xs font-semibold hover:border-blue-300 hover:text-blue-500 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 transition-all flex items-center justify-center gap-1.5"
                   >
                     <Plus className="w-3.5 h-3.5" />
@@ -159,6 +165,16 @@ export default function KanbanPage({ params }: { params: Promise<{ id: string }>
 
       {selectedTask && (
         <TaskDetailModal task={selectedTask} onClose={() => setSelectedTask(null)} />
+      )}
+
+      {createStatus !== null && (
+        <CreateTaskModal
+          projectId={project.id}
+          projectKey={project.key}
+          defaultStatus={createStatus}
+          onClose={() => setCreateStatus(null)}
+          onCreate={handleCreate}
+        />
       )}
     </div>
   );

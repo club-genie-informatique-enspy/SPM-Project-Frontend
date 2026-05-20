@@ -2,19 +2,26 @@
 
 import { useState, use } from "react";
 import {
+  BarChart3,
+  Bell,
+  Calendar,
   ChevronRight,
+  Clock,
   GanttChartSquare,
+  Globe,
   Trello,
   Users,
   Settings,
   ShieldAlert,
   Archive,
   Trash2,
-  Save
+  Save,
+  Tag
 } from "@/lib/icons";
-import { projects } from "@/lib/mock-data";
+import { projects, tasks, users as allUsers } from "@/lib/mock-data";
 import Link from "next/link";
 import Modal from "@/components/ui/Modal";
+import Badge from "@/components/ui/Badge";
 
 export default function ProjectSettingsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -32,8 +39,22 @@ export default function ProjectSettingsPage({ params }: { params: Promise<{ id: 
 
   const sections = [
     { id: "general", label: "Général",         icon: Settings },
+    { id: "workflow", label: "Workflow",       icon: Trello },
+    { id: "notifications", label: "Notifications", icon: Bell },
     { id: "danger",  label: "Zone de danger",  icon: ShieldAlert },
   ];
+
+  const projectTasks = tasks.filter((task) => task.projectId === project.id);
+  const completedTasks = projectTasks.filter((task) => task.status === "done").length;
+  const owner = allUsers.find((user) => user.id === project.ownerId) ?? allUsers[0];
+  const updatedAt = new Date(project.updatedAt).toLocaleDateString("fr-FR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+  const completion = projectTasks.length > 0
+    ? Math.round((completedTasks / projectTasks.length) * 100)
+    : 0;
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
@@ -93,9 +114,9 @@ export default function ProjectSettingsPage({ params }: { params: Promise<{ id: 
           </nav>
         </aside>
 
-        {/* Settings content */}
         <div className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-2xl space-y-5">
+          <div className="max-w-6xl grid xl:grid-cols-[minmax(0,1fr)_320px] gap-6">
+            <div className="space-y-5">
             {activeSection === "general" ? (
               <>
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
@@ -132,15 +153,112 @@ export default function ProjectSettingsPage({ params }: { params: Promise<{ id: 
 
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
                   <h3 className="text-sm font-black text-gray-900 dark:text-gray-100 mb-5 uppercase tracking-wide">Préférences</h3>
-                  <label className="flex items-center justify-between p-3 rounded-lg border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-all">
+                  <div className="space-y-3">
+                  <label className="flex items-center justify-between gap-4 p-3 rounded-lg border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-all">
                     <div>
                       <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Visibilité publique</p>
                       <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Tout le monde dans l&apos;organisation peut voir ce projet.</p>
                     </div>
-                    <div className={`w-10 h-5 rounded-full relative p-0.5 shadow-inner transition-colors ${project.visibility === "public" ? "bg-blue-500" : "bg-gray-200 dark:bg-gray-600"}`}>
+                    <div className={`w-10 h-5 rounded-full relative p-0.5 shadow-inner transition-colors shrink-0 ${project.visibility === "public" ? "bg-blue-500" : "bg-gray-200 dark:bg-gray-600"}`}>
                       <div className={`w-4 h-4 bg-white rounded-full shadow-md transition-transform ${project.visibility === "public" ? "translate-x-5" : "translate-x-0"}`} />
                     </div>
                   </label>
+                  <label className="flex items-center justify-between gap-4 p-3 rounded-lg border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-all">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Autoriser les invitations membres</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Les administrateurs du projet peuvent inviter de nouveaux collaborateurs.</p>
+                    </div>
+                    <div className="w-10 h-5 rounded-full relative p-0.5 shadow-inner transition-colors bg-blue-500 shrink-0">
+                      <div className="w-4 h-4 bg-white rounded-full shadow-md transition-transform translate-x-5" />
+                    </div>
+                  </label>
+                  </div>
+                </div>
+              </>
+            ) : activeSection === "workflow" ? (
+              <>
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                  <h3 className="text-sm font-black text-gray-900 dark:text-gray-100 mb-5 uppercase tracking-wide">Colonnes du tableau</h3>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    {[
+                      ["À faire", "Les tâches prêtes à être prises en charge."],
+                      ["En cours", "Le travail actif de l'équipe."],
+                      ["En revue", "Les tâches en validation."],
+                      ["Terminé", "Les livraisons finalisées."],
+                    ].map(([name, description]) => (
+                      <div key={name} className="p-4 rounded-lg border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/40">
+                        <p className="text-sm font-bold text-gray-900 dark:text-gray-100">{name}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{description}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                  <h3 className="text-sm font-black text-gray-900 dark:text-gray-100 mb-5 uppercase tracking-wide">Règles de travail</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1.5 uppercase tracking-wide">Limite tâches en cours</label>
+                      <input
+                        type="number"
+                        defaultValue={5}
+                        className="w-full px-3 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all text-sm"
+                      />
+                    </div>
+                    <label className="flex items-center justify-between gap-4 p-3 rounded-lg border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-all">
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Bloquer les tâches sans responsable</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Empêche le passage en cours si personne n&apos;est assigné.</p>
+                      </div>
+                      <div className="w-10 h-5 rounded-full relative p-0.5 shadow-inner transition-colors bg-gray-200 dark:bg-gray-600 shrink-0">
+                        <div className="w-4 h-4 bg-white rounded-full shadow-md transition-transform" />
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              </>
+            ) : activeSection === "notifications" ? (
+              <>
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                  <h3 className="text-sm font-black text-gray-900 dark:text-gray-100 mb-5 uppercase tracking-wide">Notifications projet</h3>
+                  <div className="space-y-3">
+                    {[
+                      ["Commentaires et mentions", "Prévenir les membres lorsqu'ils sont mentionnés."],
+                      ["Changement de statut", "Notifier l'équipe quand une tâche change de colonne."],
+                      ["Échéances proches", "Envoyer un rappel avant les dates limites."],
+                    ].map(([name, description], index) => (
+                      <label key={name} className="flex items-center justify-between gap-4 p-3 rounded-lg border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-all">
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{name}</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{description}</p>
+                        </div>
+                        <div className={`w-10 h-5 rounded-full relative p-0.5 shadow-inner transition-colors shrink-0 ${index < 2 ? "bg-blue-500" : "bg-gray-200 dark:bg-gray-600"}`}>
+                          <div className={`w-4 h-4 bg-white rounded-full shadow-md transition-transform ${index < 2 ? "translate-x-5" : "translate-x-0"}`} />
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                  <h3 className="text-sm font-black text-gray-900 dark:text-gray-100 mb-5 uppercase tracking-wide">Email de synthèse</h3>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1.5 uppercase tracking-wide">Fréquence</label>
+                      <select className="w-full p-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all text-sm">
+                        <option>Chaque semaine</option>
+                        <option>Chaque jour</option>
+                        <option>Désactivé</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1.5 uppercase tracking-wide">Jour d&apos;envoi</label>
+                      <select className="w-full p-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all text-sm">
+                        <option>Lundi</option>
+                        <option>Vendredi</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
               </>
             ) : (
@@ -175,6 +293,95 @@ export default function ProjectSettingsPage({ params }: { params: Promise<{ id: 
                 </div>
               </div>
             )}
+            </div>
+
+            <aside className="space-y-5">
+              <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Résumé</p>
+                    <h3 className="text-base font-black text-gray-900 dark:text-gray-100 mt-1">{project.name}</h3>
+                  </div>
+                  <Badge variant={project.status} />
+                </div>
+
+                <div className="mt-5 space-y-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-gray-500 dark:text-gray-400">Avancement</span>
+                      <span className="text-xs font-black text-blue-600 dark:text-blue-400">{completion}%</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
+                      <div className="h-full rounded-full bg-blue-500" style={{ width: `${completion}%` }} />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
+                      <BarChart3 className="w-4 h-4 text-blue-600 dark:text-blue-400 mb-2" />
+                      <p className="text-lg font-black text-gray-900 dark:text-gray-100">{projectTasks.length}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Tâches</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
+                      <Users className="w-4 h-4 text-blue-600 dark:text-blue-400 mb-2" />
+                      <p className="text-lg font-black text-gray-900 dark:text-gray-100">{project.members.length}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Membres</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 pt-1">
+                    <div className="flex items-center gap-3 text-sm">
+                      <Globe className="w-4 h-4 text-gray-400" />
+                      <span className="text-gray-500 dark:text-gray-400">Visibilité</span>
+                      <span className="ml-auto font-semibold text-gray-900 dark:text-gray-100 capitalize">{project.visibility}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm">
+                      <Users className="w-4 h-4 text-gray-400" />
+                      <span className="text-gray-500 dark:text-gray-400">Responsable</span>
+                      <span className="ml-auto font-semibold text-gray-900 dark:text-gray-100">{owner.name}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm">
+                      <Calendar className="w-4 h-4 text-gray-400" />
+                      <span className="text-gray-500 dark:text-gray-400">Mis à jour</span>
+                      <span className="ml-auto font-semibold text-gray-900 dark:text-gray-100">{updatedAt}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                <h3 className="text-sm font-black text-gray-900 dark:text-gray-100 mb-4 uppercase tracking-wide">Accès rapides</h3>
+                <div className="space-y-2">
+                  {[
+                    { label: "Tableau Kanban", href: `/dashboard/projects/${project.id}/kanban`, icon: Trello },
+                    { label: "Planning Gantt", href: `/dashboard/projects/${project.id}/gantt`, icon: Clock },
+                    { label: "Membres du projet", href: `/dashboard/projects/${project.id}/members`, icon: Users },
+                  ].map((item) => (
+                    <Link
+                      key={item.label}
+                      href={item.href}
+                      className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 dark:border-gray-700 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all"
+                    >
+                      <item.icon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      {item.label}
+                      <ChevronRight className="w-4 h-4 text-gray-400 ml-auto" />
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                <h3 className="text-sm font-black text-gray-900 dark:text-gray-100 mb-4 uppercase tracking-wide">Tags actifs</h3>
+                <div className="flex flex-wrap gap-2">
+                  {Array.from(new Set(projectTasks.flatMap((task) => task.tags))).slice(0, 6).map((tag) => (
+                    <span key={tag} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-bold">
+                      <Tag className="w-3 h-3" />
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </aside>
           </div>
         </div>
       </main>
