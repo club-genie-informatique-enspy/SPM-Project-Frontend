@@ -2,32 +2,37 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronRight, Lock, Globe } from "@/lib/icons";
+import { ChevronRight, Lock, Globe, Layers } from "@/lib/icons";
 import { useRouter } from "next/navigation";
+import { projectsApi } from "@/lib/api/projects";
 
 export default function NewProjectPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
     name: "",
-    key: "",
     description: "",
-    visibility: "private" as "public" | "private",
+    visibility: "PRIVATE" as "PUBLIC" | "PRIVATE",
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState("");
 
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const name = e.target.value;
-    const key = name
-      .split(" ")
-      .map(word => word[0] ?? "")
-      .join("")
-      .toUpperCase()
-      .slice(0, 4);
-    setFormData(prev => ({ ...prev, name, key }));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    router.push("/dashboard/projects");
+    if (!formData.name.trim()) { setError("Le nom du projet est obligatoire."); return; }
+
+    setLoading(true);
+    setError("");
+    try {
+      const project = await projectsApi.create({
+        name: formData.name.trim(),
+        description: formData.description.trim() || undefined,
+        visibility: formData.visibility,
+      });
+      router.push(`/dashboard/projects/${project.id}/kanban`);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Erreur lors de la création.");
+      setLoading(false);
+    }
   };
 
   return (
@@ -44,36 +49,37 @@ export default function NewProjectPage() {
       </header>
 
       <div className="bg-white dark:bg-gray-800 p-8 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+        {error && (
+          <div className="mb-6 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-lg text-sm">
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid sm:grid-cols-3 gap-4">
-            <div className="sm:col-span-2">
-              <label htmlFor="name" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                Nom du projet <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="name"
-                type="text"
-                required
-                value={formData.name}
-                onChange={handleNameChange}
-                className="block w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm placeholder:text-gray-400"
-                placeholder="Ex: Refonte du Site Web"
-              />
-            </div>
-            <div>
-              <label htmlFor="key" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                Clé projet
-              </label>
-              <input
-                id="key"
-                type="text"
-                required
-                value={formData.key}
-                onChange={(e) => setFormData({ ...formData, key: e.target.value.toUpperCase() })}
-                className="block w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-bold text-blue-600 dark:text-blue-400 bg-blue-50/30 dark:bg-blue-900/20 text-sm"
-                placeholder="RSW"
-                maxLength={5}
-              />
+          <div>
+            <label htmlFor="name" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+              Nom du projet <span className="text-red-500">*</span>
+            </label>
+            <input
+              id="name"
+              type="text"
+              required
+              value={formData.name}
+              onChange={(e) => { setFormData(prev => ({ ...prev, name: e.target.value })); setError(""); }}
+              className="block w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm placeholder:text-gray-400"
+              placeholder="Ex: Refonte du Site Web"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="workspace-placeholder" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+              Organisation
+            </label>
+            <div className="relative">
+              <Layers className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <div className="block w-full pl-9 pr-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50 text-gray-400 dark:text-gray-500 text-sm">
+                Club GI ENSPY
+              </div>
             </div>
           </div>
 
@@ -85,7 +91,7 @@ export default function NewProjectPage() {
               id="description"
               rows={3}
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               className="block w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm resize-none placeholder:text-gray-400"
               placeholder="Décrivez brièvement l'objectif de ce projet..."
             />
@@ -96,14 +102,14 @@ export default function NewProjectPage() {
             <div className="grid sm:grid-cols-2 gap-3">
               <button
                 type="button"
-                onClick={() => setFormData({ ...formData, visibility: "private" })}
+                onClick={() => setFormData(prev => ({ ...prev, visibility: "PRIVATE" }))}
                 className={`flex items-start gap-3 p-4 rounded-lg border-2 transition-all text-left ${
-                  formData.visibility === "private"
+                  formData.visibility === "PRIVATE"
                     ? "border-blue-500 bg-blue-50/50 dark:bg-blue-900/20"
                     : "border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500"
                 }`}
               >
-                <div className={`p-1.5 rounded-lg mt-0.5 ${formData.visibility === "private" ? "bg-blue-500 text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-400"}`}>
+                <div className={`p-1.5 rounded-lg mt-0.5 ${formData.visibility === "PRIVATE" ? "bg-blue-500 text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-400"}`}>
                   <Lock className="w-4 h-4" />
                 </div>
                 <div>
@@ -114,14 +120,14 @@ export default function NewProjectPage() {
 
               <button
                 type="button"
-                onClick={() => setFormData({ ...formData, visibility: "public" })}
+                onClick={() => setFormData(prev => ({ ...prev, visibility: "PUBLIC" }))}
                 className={`flex items-start gap-3 p-4 rounded-lg border-2 transition-all text-left ${
-                  formData.visibility === "public"
+                  formData.visibility === "PUBLIC"
                     ? "border-blue-500 bg-blue-50/50 dark:bg-blue-900/20"
                     : "border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500"
                 }`}
               >
-                <div className={`p-1.5 rounded-lg mt-0.5 ${formData.visibility === "public" ? "bg-blue-500 text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-400"}`}>
+                <div className={`p-1.5 rounded-lg mt-0.5 ${formData.visibility === "PUBLIC" ? "bg-blue-500 text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-400"}`}>
                   <Globe className="w-4 h-4" />
                 </div>
                 <div>
@@ -139,8 +145,12 @@ export default function NewProjectPage() {
             >
               Annuler
             </Link>
-            <button type="submit" className="btn-primary py-2.5 px-6 text-sm">
-              Créer le projet
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-primary py-2.5 px-6 text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {loading ? "Création…" : "Créer le projet"}
             </button>
           </div>
         </form>

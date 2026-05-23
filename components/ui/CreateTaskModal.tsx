@@ -1,15 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Tag } from "@/lib/icons";
-import { users } from "@/lib/mock-data";
-import { Task, TaskStatus, Priority } from "@/types";
+import { X } from "@/lib/icons";
+import { Task, TaskStatus, Priority, MemberResponse, adaptTask } from "@/types";
+import { tasksApi } from "@/lib/api/tasks";
 import Avatar from "./Avatar";
 
 interface CreateTaskModalProps {
   projectId: string;
   projectKey: string;
   defaultStatus?: TaskStatus;
+  members?: MemberResponse[];
   onClose: () => void;
   onCreate: (task: Task) => void;
 }
@@ -29,17 +30,11 @@ const PRIORITY_LABELS: Record<Priority, string> = {
   critical: "Critique",
 };
 
-const PRIORITY_COLORS: Record<Priority, string> = {
-  low:      "text-gray-500",
-  medium:   "text-blue-500",
-  high:     "text-orange-500",
-  critical: "text-red-500",
-};
-
 export default function CreateTaskModal({
   projectId,
   projectKey,
   defaultStatus = "todo",
+  members = [],
   onClose,
   onCreate,
 }: CreateTaskModalProps) {
@@ -47,12 +42,10 @@ export default function CreateTaskModal({
   const [description, setDescription] = useState("");
   const [status,      setStatus]      = useState<TaskStatus>(defaultStatus);
   const [priority,    setPriority]    = useState<Priority>("medium");
-  const [assigneeId,  setAssigneeId]  = useState("");
+  const [assigneeId,  setAssigneeId]  = useState<number | null>(null);
   const [dueDate,     setDueDate]     = useState("");
-  const [storyPoints, setStoryPoints] = useState("");
-  const [tagInput,    setTagInput]    = useState("");
-  const [tags,        setTags]        = useState<string[]>([]);
   const [error,       setError]       = useState("");
+  const [loading,     setLoading]     = useState(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -64,38 +57,26 @@ export default function CreateTaskModal({
     };
   }, [onClose]);
 
-  const addTag = () => {
-    const t = tagInput.trim().toLowerCase().replace(/\s+/g, "-");
-    if (t && !tags.includes(t)) setTags([...tags, t]);
-    setTagInput("");
-  };
-
-  const handleTagKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" || e.key === ",") { e.preventDefault(); addTag(); }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) { setError("Le titre est obligatoire."); return; }
 
-    const now = new Date().toISOString();
-    const newTask: Task = {
-      id:          `${projectId}-task-${Date.now()}`,
-      title:       title.trim(),
-      description: description.trim(),
-      status,
-      priority,
-      projectId,
-      assigneeId:  assigneeId || undefined,
-      storyPoints: storyPoints ? parseInt(storyPoints) : undefined,
-      dueDate:     dueDate || undefined,
-      tags,
-      createdAt:   now,
-      updatedAt:   now,
-    };
-
-    onCreate(newTask);
-    onClose();
+    setLoading(true);
+    setError("");
+    try {
+      const taskResponse = await tasksApi.create(projectId, {
+        title: title.trim(),
+        description: description.trim() || undefined,
+        priority,
+        assigneeId: assigneeId ?? undefined,
+        dueDate: dueDate || undefined,
+      });
+      onCreate(adaptTask(taskResponse));
+      onClose();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Erreur lors de la création.");
+      setLoading(false);
+    }
   };
 
   return (
@@ -124,7 +105,7 @@ export default function CreateTaskModal({
         </div>
 
         {/* Form */}
-        <form id="create-task-form" onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
           {error && (
             <p className="text-xs font-semibold text-red-500 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-lg">{error}</p>
           )}
@@ -180,103 +161,47 @@ export default function CreateTaskModal({
                 className="w-full px-3 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {(Object.keys(PRIORITY_LABELS) as Priority[]).map((p) => (
-                  <option key={p} value={p} className={PRIORITY_COLORS[p]}>{PRIORITY_LABELS[p]}</option>
+                  <option key={p} value={p}>{PRIORITY_LABELS[p]}</option>
                 ))}
               </select>
             </div>
           </div>
 
-          {/* Assignee */}
-          <div>
-            <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest block mb-1.5">Assigné à</label>
-            <div className="grid grid-cols-3 gap-2">
-              {users.map((u) => (
-                <button
-                  key={u.id}
-                  type="button"
-                  onClick={() => setAssigneeId(assigneeId === u.id ? "" : u.id)}
-                  className={`flex items-center gap-2 px-2 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
-                    assigneeId === u.id
-                      ? "border-blue-400 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
-                      : "border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-500"
-                  }`}
-                >
-                  <Avatar name={u.name} size="sm" className="shrink-0" />
-                  <span className="truncate">{u.name.split(" ")[0]}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Due date + Story points */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Assignee — real members from API */}
+          {members.length > 0 && (
             <div>
-              <label htmlFor="task-due-date" className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest block mb-1.5">Échéance</label>
-              <input
-                id="task-due-date"
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                title="Date d'échéance"
-                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest block mb-1.5">Story Points</label>
-              <input
-                type="number"
-                min="0"
-                max="100"
-                value={storyPoints}
-                onChange={(e) => setStoryPoints(e.target.value)}
-                placeholder="Ex : 5"
-                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400"
-              />
-            </div>
-          </div>
-
-          {/* Tags */}
-          <div>
-            <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest block mb-1.5">Étiquettes</label>
-            <div className="flex items-center gap-2">
-              <div className="relative flex-1">
-                <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-                <input
-                  type="text"
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={handleTagKeyDown}
-                  placeholder="frontend, api… (Entrée pour ajouter)"
-                  className="w-full pl-8 pr-3 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={addTag}
-                className="px-3 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 text-xs font-bold text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
-              >
-                +
-              </button>
-            </div>
-            {tags.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-2">
-                {tags.map((t) => (
-                  <span
-                    key={t}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded text-[11px] font-semibold"
+              <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest block mb-1.5">Assigné à</label>
+              <div className="grid grid-cols-3 gap-2">
+                {members.map((m) => (
+                  <button
+                    key={m.userId}
+                    type="button"
+                    onClick={() => setAssigneeId(assigneeId === m.userId ? null : m.userId)}
+                    className={`flex items-center gap-2 px-2 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
+                      assigneeId === m.userId
+                        ? "border-blue-400 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
+                        : "border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-500"
+                    }`}
                   >
-                    #{t}
-                    <button
-                      type="button"
-                      onClick={() => setTags(tags.filter((tag) => tag !== t))}
-                      className="hover:text-red-400 transition-colors leading-none"
-                    >
-                      ×
-                    </button>
-                  </span>
+                    <Avatar name={m.fullName} size="sm" className="shrink-0" />
+                    <span className="truncate">{m.fullName.split(" ")[0]}</span>
+                  </button>
                 ))}
               </div>
-            )}
+            </div>
+          )}
+
+          {/* Due date */}
+          <div>
+            <label htmlFor="task-due-date" className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest block mb-1.5">Échéance</label>
+            <input
+              id="task-due-date"
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              title="Date d'échéance"
+              className="w-full px-3 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
           </div>
         </form>
 
@@ -290,12 +215,12 @@ export default function CreateTaskModal({
             Annuler
           </button>
           <button
-            type="submit"
-            form=""
+            type="button"
             onClick={handleSubmit as unknown as React.MouseEventHandler}
-            className="px-5 py-2 rounded-lg text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition-all active:scale-95 shadow-sm"
+            disabled={loading}
+            className="px-5 py-2 rounded-lg text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition-all active:scale-95 shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Créer la tâche
+            {loading ? "Création…" : "Créer la tâche"}
           </button>
         </div>
       </div>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Layers, Eye, EyeOff, Github } from "@/lib/icons";
 import { Google } from "@/lib/icons";
 import { useRouter } from "next/navigation";
+import { apiClient } from "@/lib/api-client";
 
 function getStrength(pwd: string): number {
   if (!pwd) return 0;
@@ -65,26 +66,16 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-        }),
+      await apiClient.post("/api/auth/register", {
+        email: formData.email,
+        password: formData.password,
+        nom: formData.name,
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        router.push("/auth/login");
-      } else {
-        setError(data.message || "Échec de l'inscription. L'utilisateur existe peut-être déjà.");
-      }
-    } catch (err) {
+      router.push(`/auth/verify-otp?email=${encodeURIComponent(formData.email)}`);
+    } catch (err: unknown) {
       console.error("Register error:", err);
-      setError("Erreur de connexion à l'API locale.");
+      setError(err instanceof Error ? err.message : "Échec de l'inscription. L'utilisateur existe peut-être déjà.");
     } finally {
       setIsLoading(false);
     }

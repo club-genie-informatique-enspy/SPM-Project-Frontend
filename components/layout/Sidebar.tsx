@@ -17,14 +17,39 @@ import {
   Moon,
 } from "@/lib/icons";
 import Avatar from "../ui/Avatar";
-import { users } from "@/lib/mock-data";
 import { useTheme } from "@/components/ThemeProvider";
+import { useWorkspace } from "@/components/WorkspaceProvider";
 
 const Sidebar = () => {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const currentUser = users[0];
   const { theme, toggleTheme } = useTheme();
+  const { selectedWorkspace, selectedWorkspaceId, setSelectedWorkspaceId, workspaces } = useWorkspace();
+
+  const [currentUser] = useState<{ name: string; email: string; role: string }>(() => {
+    if (typeof window === "undefined") return { name: "Utilisateur", email: "", role: "user" };
+    const storedUser = localStorage.getItem("user");
+    if (!storedUser) return { name: "Utilisateur", email: "", role: "user" };
+    try {
+      const parsed = JSON.parse(storedUser) as Record<string, unknown>;
+      return {
+        name: (parsed.nom as string) || (parsed.name as string) || "Utilisateur",
+        email: (parsed.email as string) || "",
+        role: (Array.isArray(parsed.roles) && (parsed.roles.includes("ROLE_ADMIN") || parsed.roles.includes("admin"))) ? "admin" : "user"
+      };
+    } catch {
+      return { name: "Utilisateur", email: "", role: "user" };
+    }
+  });
+
+  const handleLogout = () => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax";
+      window.location.href = "/auth/login";
+    }
+  };
 
   const navItems = [
     { name: "Tableau de bord", icon: LayoutDashboard, href: "/dashboard" },
@@ -69,6 +94,41 @@ const Sidebar = () => {
           : <ChevronLeft className="w-3 h-3 text-gray-400" />
         }
       </button>
+
+      {!isCollapsed && (
+        <div className="px-2 pt-3">
+          <label className="block px-3 mb-1.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+            Workspace
+          </label>
+          <div className="px-3 py-2 rounded-lg bg-white/5 border border-white/10">
+            <p className="text-xs font-bold text-gray-200 truncate">{selectedWorkspace.name}</p>
+            <select
+              aria-label="Changer de workspace"
+              value={selectedWorkspaceId}
+              onChange={(event) => setSelectedWorkspaceId(event.target.value)}
+              className="mt-1 w-full bg-transparent text-[11px] font-medium text-gray-400 focus:outline-none"
+            >
+              {workspaces.map((workspace) => (
+                <option key={workspace.id} value={workspace.id} className="bg-[#1d2125] text-gray-200">
+                  {workspace.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
+
+      {isCollapsed && (
+        <div className="px-2 pt-3">
+          <button
+            type="button"
+            title={selectedWorkspace.name}
+            className="w-full flex items-center justify-center p-2 rounded-lg bg-white/5 border border-white/10 text-xs font-black text-white"
+          >
+            {selectedWorkspace.name.slice(0, 1)}
+          </button>
+        </div>
+      )}
 
       {/* Nav */}
       <nav className="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto">
@@ -156,7 +216,11 @@ const Sidebar = () => {
 
       {/* User */}
       <div className="px-2 py-3 border-t border-white/10">
-        <div className={`flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group ${isCollapsed ? "justify-center" : ""}`}>
+        <div
+          onClick={isCollapsed ? handleLogout : undefined}
+          className={`flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group ${isCollapsed ? "justify-center" : ""}`}
+          title={isCollapsed ? "Se déconnecter" : undefined}
+        >
           <Avatar name={currentUser.name} size="sm" className="shrink-0" />
           {!isCollapsed && (
             <div className="flex-1 min-w-0">
@@ -165,7 +229,12 @@ const Sidebar = () => {
             </div>
           )}
           {!isCollapsed && (
-            <button type="button" className="text-gray-500 hover:text-red-400 transition-colors">
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="text-gray-500 hover:text-red-400 transition-colors"
+              title="Se déconnecter"
+            >
               <LogOut className="w-3.5 h-3.5" />
             </button>
           )}

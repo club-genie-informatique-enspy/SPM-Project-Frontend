@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Layers, Eye, EyeOff, Github } from "@/lib/icons";
 import { Google } from "@/lib/icons";
 import { useRouter } from "next/navigation";
+import { apiClient } from "@/lib/api-client";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -20,24 +21,21 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+      const data = await apiClient.post<{ token: string; user: Record<string, unknown> }>("/api/auth/login", {
+        email,
+        password,
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        if (data.token)  localStorage.setItem("token", data.token);
-        if (data.user)   localStorage.setItem("user", JSON.stringify(data.user));
-        router.push("/dashboard");
-      } else {
-        setError(data.message || "Échec de la connexion. Veuillez vérifier vos identifiants.");
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+        // Enregistrer également dans les cookies pour le middleware Next.js
+        document.cookie = `token=${data.token}; path=/; max-age=86400; SameSite=Lax`;
       }
-    } catch (err) {
+      if (data.user)   localStorage.setItem("user", JSON.stringify(data.user));
+      router.push("/dashboard");
+    } catch (err: unknown) {
       console.error("Login error:", err);
-      setError("Erreur de connexion à l'API locale.");
+      setError(err instanceof Error ? err.message : "Échec de la connexion. Veuillez vérifier vos identifiants.");
     } finally {
       setIsLoading(false);
     }

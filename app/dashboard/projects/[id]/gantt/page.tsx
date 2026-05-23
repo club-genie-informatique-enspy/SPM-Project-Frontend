@@ -1,6 +1,6 @@
 "use client";
 
-import { use } from "react";
+import { useState, useEffect, use } from "react";
 import {
   ChevronRight,
   GanttChartSquare,
@@ -9,32 +9,82 @@ import {
   Settings,
   Calendar
 } from "@/lib/icons";
-import { projects, tasks as allTasks, users } from "@/lib/mock-data";
 import Link from "next/link";
 import Avatar from "@/components/ui/Avatar";
 import Badge from "@/components/ui/Badge";
-import { Task } from "@/types";
+import { GanttTask } from "@/types";
+import { tasksApi } from "@/lib/api/tasks";
+import { projectsApi } from "@/lib/api/projects";
 
-export default function GanttPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
-  const project = projects.find(p => p.id === id) || projects[0];
-  const projectTasks = allTasks.filter(t => t.projectId === project.id);
+const STATUS_COLOR: Record<string, string> = {
+  DONE:        "bg-green-100 dark:bg-green-900/40 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400",
+  IN_PROGRESS: "bg-blue-100 dark:bg-blue-900/40 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400",
+  IN_REVIEW:   "bg-violet-100 dark:bg-violet-900/40 border border-violet-200 dark:border-violet-800 text-violet-700 dark:text-violet-400",
+  BLOCKED:     "bg-red-100 dark:bg-red-900/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400",
+  TODO:        "bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400",
+};
 
-  const tabs = [
-    { name: "Kanban",     href: `/dashboard/projects/${project.id}/kanban`,   icon: Trello },
-    { name: "Gantt",      href: `/dashboard/projects/${project.id}/gantt`,    icon: GanttChartSquare, active: true },
-    { name: "Membres",    href: `/dashboard/projects/${project.id}/members`,  icon: Users },
-    { name: "Paramètres", href: `/dashboard/projects/${project.id}/settings`, icon: Settings },
-  ];
+const STATUS_DOT: Record<string, string> = {
+  DONE:        "bg-green-500",
+  IN_PROGRESS: "bg-blue-500",
+  IN_REVIEW:   "bg-violet-500",
+  BLOCKED:     "bg-red-500",
+  TODO:        "bg-gray-300",
+};
 
-  const days = Array.from({ length: 30 }, (_, i) => {
-    const date = new Date(2026, 4, i + 1);
+function buildDays(year: number, month: number) {
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const today = new Date();
+  return Array.from({ length: daysInMonth }, (_, i) => {
+    const date = new Date(year, month, i + 1);
     return {
       day: date.getDate(),
       weekday: date.toLocaleDateString("fr-FR", { weekday: "short" }),
-      isToday: i + 1 === 19,
+      isToday: date.toDateString() === today.toDateString(),
     };
   });
+}
+
+function taskBarStyle(task: GanttTask, days: { day: number }[], year: number, month: number) {
+  if (!task.startDate && !task.endDate) return null;
+  const start = task.startDate ? new Date(task.startDate) : new Date(task.endDate!);
+  const end   = task.endDate   ? new Date(task.endDate)   : new Date(task.startDate!);
+  if (start.getFullYear() !== year || start.getMonth() !== month) return null;
+  const startIdx = start.getDate() - 1;
+  const endIdx   = Math.min(end.getDate() - 1, days.length - 1);
+  const duration = Math.max(1, endIdx - startIdx + 1);
+  return { left: `${startIdx * 40 + 8}px`, width: `${duration * 40 - 16}px` };
+}
+
+export default function GanttPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+
+  const [projectName, setProjectName] = useState("");
+  const [tasks, setTasks]             = useState<GanttTask[]>([]);
+  const [loading, setLoading]         = useState(true);
+
+  const now   = new Date();
+  const year  = now.getFullYear();
+  const month = now.getMonth();
+  const days  = buildDays(year, month);
+  const monthLabel = now.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+
+  useEffect(() => {
+    Promise.all([
+      tasksApi.gantt(id),
+      projectsApi.get(id),
+    ]).then(([gantt, project]) => {
+      setTasks(gantt.tasks);
+      setProjectName(project.name);
+    }).finally(() => setLoading(false));
+  }, [id]);
+
+  const tabs = [
+    { name: "Kanban",     href: `/dashboard/projects/${id}/kanban`,   icon: Trello },
+    { name: "Gantt",      href: `/dashboard/projects/${id}/gantt`,    icon: GanttChartSquare, active: true },
+    { name: "Membres",    href: `/dashboard/projects/${id}/members`,  icon: Users },
+    { name: "Paramètres", href: `/dashboard/projects/${id}/settings`, icon: Settings },
+  ];
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
@@ -43,14 +93,14 @@ export default function GanttPage({ params }: { params: Promise<{ id: string }> 
         <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500 mb-4">
           <Link href="/dashboard/projects" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Projets</Link>
           <ChevronRight className="w-3.5 h-3.5" />
-          <span className="text-gray-700 dark:text-gray-300">{project.name}</span>
+          <span className="text-gray-700 dark:text-gray-300">{projectName || id}</span>
         </div>
 
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-base font-black text-gray-900 dark:text-gray-100">Timeline · {project.name}</h1>
+          <h1 className="text-base font-black text-gray-900 dark:text-gray-100">Timeline · {projectName || "Chargement…"}</h1>
           <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-gray-700 rounded-lg text-gray-500 dark:text-gray-400 font-semibold text-xs border border-gray-200 dark:border-gray-600">
             <Calendar className="w-3.5 h-3.5" />
-            Mai 2026
+            {monthLabel}
           </div>
         </div>
 
@@ -80,21 +130,24 @@ export default function GanttPage({ params }: { params: Promise<{ id: string }> 
             <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Tâches</span>
           </div>
           <div className="flex-1 overflow-y-auto">
-            {projectTasks.map((task: Task) => (
-              <div key={task.id} className="h-12 border-b border-gray-100 dark:border-gray-700 flex items-center px-4 gap-2.5 group hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                <div className={`w-1 h-6 rounded-full shrink-0 ${
-                  task.status === "done"        ? "bg-green-500" :
-                  task.status === "in_progress" ? "bg-blue-500"  :
-                  task.status === "in_review"   ? "bg-violet-500" : "bg-gray-300"
-                }`} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{task.title}</p>
-                  <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">
-                    {users.find(u => u.id === task.assigneeId)?.name ?? "—"}
-                  </p>
-                </div>
-              </div>
-            ))}
+            {loading
+              ? Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="h-12 border-b border-gray-100 dark:border-gray-700 flex items-center px-4">
+                    <div className="h-4 bg-gray-100 dark:bg-gray-700 rounded animate-pulse flex-1" />
+                  </div>
+                ))
+              : tasks.map((task) => (
+                  <div key={task.id} className="h-12 border-b border-gray-100 dark:border-gray-700 flex items-center px-4 gap-2.5 group hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <div className={`w-1 h-6 rounded-full shrink-0 ${STATUS_DOT[task.status] ?? "bg-gray-300"}`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{task.title}</p>
+                      <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">
+                        {task.assigneeName ?? "—"}
+                      </p>
+                    </div>
+                  </div>
+                ))
+            }
           </div>
         </div>
 
@@ -117,44 +170,45 @@ export default function GanttPage({ params }: { params: Promise<{ id: string }> 
 
             {/* Bars */}
             <div className="flex-1 overflow-y-auto relative">
-              {projectTasks.map((task: Task, taskIdx: number) => {
-                const startDay = (taskIdx * 2) % 20;
-                const duration = 3 + (taskIdx % 5);
-                const assignee = users.find(u => u.id === task.assigneeId);
+              {loading
+                ? Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="h-12 border-b border-gray-100 dark:border-gray-700" />
+                  ))
+                : tasks.map((task) => {
+                    const barStyle = taskBarStyle(task, days, year, month);
+                    return (
+                      <div key={task.id} className="h-12 border-b border-gray-100 dark:border-gray-700 relative group hover:bg-gray-50/30 dark:hover:bg-gray-700/30 transition-colors">
+                        {barStyle && (
+                          <div
+                            className={`absolute top-1/2 -translate-y-1/2 h-6 rounded cursor-pointer hover:brightness-95 transition-all flex items-center px-2.5 gap-1.5 group/bar ${STATUS_COLOR[task.status] ?? STATUS_COLOR.TODO}`}
+                            style={barStyle}
+                          >
+                            {task.assigneeName && <Avatar name={task.assigneeName} size="sm" className="w-4 h-4 text-[8px] shrink-0" />}
+                            <span className="text-[10px] font-bold truncate">{task.title}</span>
 
-                return (
-                  <div key={task.id} className="h-12 border-b border-gray-100 dark:border-gray-700 relative group hover:bg-gray-50/30 dark:hover:bg-gray-700/30 transition-colors">
-                    <div
-                      className={`absolute top-1/2 -translate-y-1/2 h-6 rounded cursor-pointer hover:brightness-95 transition-all flex items-center px-2.5 gap-1.5 group/bar ${
-                        task.status === "done"        ? "bg-green-100 dark:bg-green-900/40 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400" :
-                        task.status === "in_progress" ? "bg-blue-100 dark:bg-blue-900/40 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400"   :
-                        task.status === "in_review"   ? "bg-violet-100 dark:bg-violet-900/40 border border-violet-200 dark:border-violet-800 text-violet-700 dark:text-violet-400" :
-                        "bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400"
-                      }`}
-                      style={{ left: `${startDay * 40 + 8}px`, width: `${duration * 40 - 16}px` }}
-                    >
-                      {assignee && <Avatar name={assignee.name} size="sm" className="w-4 h-4 text-[8px] shrink-0" />}
-                      <span className="text-[10px] font-bold truncate">{task.title}</span>
-
-                      {/* Tooltip */}
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-gray-900 text-white p-3 rounded-xl shadow-xl text-xs min-w-[180px] opacity-0 group-hover/bar:opacity-100 pointer-events-none transition-all z-20">
-                        <p className="font-bold mb-1.5">{task.title}</p>
-                        <div className="flex items-center justify-between mb-1.5">
-                          <Badge variant={task.status} />
-                          <Badge variant={task.priority} />
-                        </div>
-                        {assignee && (
-                          <div className="flex items-center gap-1.5 pt-1.5 border-t border-white/10">
-                            <Avatar name={assignee.name} size="sm" />
-                            <span className="text-gray-300 text-[10px]">{assignee.name}</span>
+                            {/* Tooltip */}
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-gray-900 text-white p-3 rounded-xl shadow-xl text-xs min-w-[180px] opacity-0 group-hover/bar:opacity-100 pointer-events-none transition-all z-20">
+                              <p className="font-bold mb-1.5">{task.title}</p>
+                              <div className="flex items-center justify-between mb-1.5">
+                                <Badge variant={task.status.toLowerCase() as never} />
+                                <Badge variant={task.priority.toLowerCase() as never} />
+                              </div>
+                              {task.startDate && <p className="text-gray-300 text-[10px]">Début : {new Date(task.startDate).toLocaleDateString("fr-FR")}</p>}
+                              {task.endDate   && <p className="text-gray-300 text-[10px]">Fin : {new Date(task.endDate).toLocaleDateString("fr-FR")}</p>}
+                              {task.assigneeName && (
+                                <div className="flex items-center gap-1.5 pt-1.5 border-t border-white/10 mt-1.5">
+                                  <Avatar name={task.assigneeName} size="sm" />
+                                  <span className="text-gray-300 text-[10px]">{task.assigneeName}</span>
+                                </div>
+                              )}
+                              <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
+                            </div>
                           </div>
                         )}
-                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
                       </div>
-                    </div>
-                  </div>
-                );
-              })}
+                    );
+                  })
+              }
             </div>
           </div>
         </div>
@@ -166,6 +220,7 @@ export default function GanttPage({ params }: { params: Promise<{ id: string }> 
           { color: "bg-green-500",  label: "Terminé" },
           { color: "bg-blue-500",   label: "En cours" },
           { color: "bg-violet-500", label: "En revue" },
+          { color: "bg-red-500",    label: "Bloqué" },
           { color: "bg-gray-300",   label: "À faire" },
         ].map(({ color, label }) => (
           <div key={label} className="flex items-center gap-1.5">

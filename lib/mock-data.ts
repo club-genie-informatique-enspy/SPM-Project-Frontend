@@ -1,4 +1,4 @@
-import { User, Project, Task, Notification, TaskStatus, Priority } from "../types";
+import { User, Project, Task, Notification, TaskStatus, Priority, Workspace } from "../types";
 
 export const users: User[] = [
   {
@@ -43,9 +43,45 @@ export const users: User[] = [
   },
 ];
 
+export const workspaces: Workspace[] = [
+  {
+    id: "workspace-1",
+    name: "SPM Studio",
+    slug: "spm-studio",
+    description: "Espace principal pour les projets produit, design et livraison agile.",
+    domain: "example.com",
+    plan: "team",
+    ownerId: "user-1",
+    members: [
+      { userId: "user-1", workspaceId: "workspace-1", role: "owner", joinedAt: "2024-01-01T00:00:00Z", status: "active" },
+      { userId: "user-2", workspaceId: "workspace-1", role: "admin", joinedAt: "2024-01-02T00:00:00Z", status: "active" },
+      { userId: "user-3", workspaceId: "workspace-1", role: "member", joinedAt: "2024-01-03T00:00:00Z", status: "active" },
+      { userId: "user-4", workspaceId: "workspace-1", role: "member", joinedAt: "2024-01-04T00:00:00Z", status: "active" },
+    ],
+    createdAt: "2024-01-01T00:00:00Z",
+  },
+  {
+    id: "workspace-2",
+    name: "Clients externes",
+    slug: "clients-externes",
+    description: "Espace réservé aux projets client, recettes et livrables contractuels.",
+    domain: "clients.example.com",
+    plan: "free",
+    ownerId: "user-1",
+    members: [
+      { userId: "user-1", workspaceId: "workspace-2", role: "owner", joinedAt: "2024-02-01T00:00:00Z", status: "active" },
+      { userId: "user-5", workspaceId: "workspace-2", role: "member", joinedAt: "2024-02-03T00:00:00Z", status: "active" },
+    ],
+    createdAt: "2024-02-01T00:00:00Z",
+  },
+];
+
+export const activeWorkspace = workspaces[0];
+
 export const projects: Project[] = [
   {
     id: "project-1",
+    workspaceId: "workspace-1",
     name: "Plateforme E-learning",
     description: "Une solution complète pour la gestion des cours en ligne.",
     key: "PEL",
@@ -63,6 +99,7 @@ export const projects: Project[] = [
   },
   {
     id: "project-2",
+    workspaceId: "workspace-1",
     name: "App Mobile Banking",
     description: "Application mobile pour les opérations bancaires sécurisées.",
     key: "AMB",
@@ -79,6 +116,7 @@ export const projects: Project[] = [
   },
   {
     id: "project-3",
+    workspaceId: "workspace-2",
     name: "Site Vitrine ENSPY",
     description: "Refonte du site web officiel de l'ENSPY.",
     key: "ENSPY",

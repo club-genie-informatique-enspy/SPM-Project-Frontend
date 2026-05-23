@@ -4,6 +4,9 @@ import { useState, useMemo } from "react";
 import {
   CheckCircle2,
   ChevronRight,
+  Folder,
+  Layers,
+  Plus,
   Users,
   ScrollText,
   Settings2,
@@ -20,7 +23,7 @@ import {
   Lock,
   Mail
 } from "@/lib/icons";
-import { users as allUsers } from "@/lib/mock-data";
+import { projects, users as allUsers, workspaces } from "@/lib/mock-data";
 import Link from "next/link";
 import Avatar from "@/components/ui/Avatar";
 import Badge from "@/components/ui/Badge";
@@ -29,10 +32,11 @@ import { User } from "@/types";
 const LOG_BASE = new Date("2026-05-19T12:00:00Z").getTime();
 
 export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState("users");
+  const [activeTab, setActiveTab] = useState("workspaces");
   const [searchTerm, setSearchTerm] = useState("");
 
   const tabs = [
+    { id: "workspaces", label: "Workspaces", icon: Layers },
     { id: "users",  label: "Accès au compte", icon: Users },
     { id: "logs",   label: "Audit du compte", icon: ScrollText },
     { id: "config", label: "Paramètres du compte", icon: Settings2 },
@@ -102,6 +106,70 @@ export default function AdminPage() {
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+        {activeTab === "workspaces" && (
+          <div>
+            <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">Espaces de travail du compte</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Chaque workspace regroupe ses projets, ses membres et ses règles de travail.
+                </p>
+              </div>
+              <button type="button" className="btn-primary py-2 px-4 text-sm flex items-center gap-1.5 w-fit">
+                <Plus className="w-3.5 h-3.5" />
+                Nouveau workspace
+              </button>
+            </div>
+
+            <div className="grid lg:grid-cols-2 gap-4 p-4">
+              {workspaces.map((workspace) => {
+                const workspaceProjects = projects.filter((project) => project.workspaceId === workspace.id);
+                const owner = allUsers.find((user) => user.id === workspace.ownerId);
+
+                return (
+                  <div key={workspace.id} className="rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/40 p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center font-black text-sm shrink-0">
+                            {workspace.name.slice(0, 1)}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-black text-gray-900 dark:text-gray-100 truncate">{workspace.name}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{workspace.domain}</p>
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">{workspace.description}</p>
+                      </div>
+                      <span className="px-2.5 py-1 rounded-md bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-[10px] font-black text-gray-600 dark:text-gray-300 uppercase tracking-widest">
+                        {workspace.plan}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3 mt-4">
+                      <div className="rounded-lg bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 p-3">
+                        <Folder className="w-4 h-4 text-blue-600 dark:text-blue-400 mb-2" />
+                        <p className="text-lg font-black text-gray-900 dark:text-gray-100">{workspaceProjects.length}</p>
+                        <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase">Projets</p>
+                      </div>
+                      <div className="rounded-lg bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 p-3">
+                        <Users className="w-4 h-4 text-blue-600 dark:text-blue-400 mb-2" />
+                        <p className="text-lg font-black text-gray-900 dark:text-gray-100">{workspace.members.length}</p>
+                        <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase">Membres</p>
+                      </div>
+                      <div className="rounded-lg bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 p-3">
+                        <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-blue-400 mb-2" />
+                        <p className="text-sm font-black text-gray-900 dark:text-gray-100 truncate">{owner?.name}</p>
+                        <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase">Owner</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {activeTab === "users" && (
           <div>
             <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between gap-4">

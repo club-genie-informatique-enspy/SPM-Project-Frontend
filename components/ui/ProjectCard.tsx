@@ -6,7 +6,7 @@ import { Project } from "@/types";
 import Badge from "./Badge";
 import Avatar from "./Avatar";
 import { useRouter } from "next/navigation";
-import { users as allUsers } from "@/lib/mock-data";
+import { users as allUsers, workspaces } from "@/lib/mock-data";
 
 interface ProjectCardProps {
   project: Project;
@@ -21,6 +21,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
     .slice(0, 4);
 
   const extraMembers = project.members.length > 4 ? project.members.length - 4 : 0;
+  const workspace = workspaces.find((item) => item.id === project.workspaceId);
 
   return (
     <div
@@ -46,6 +47,9 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
             <Badge variant={project.status} />
           </div>
           <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 line-clamp-1">{project.name}</h3>
+          {workspace && (
+            <p className="text-[10px] text-gray-400 dark:text-gray-500 font-semibold truncate mt-0.5">{workspace.name}</p>
+          )}
         </div>
       </div>
 
